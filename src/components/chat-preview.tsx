@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useActionState } from 'react';
+import { useState, useRef, useEffect, useActionState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { getLawSummary, type LawSummaryState } from '@/app/actions';
 
@@ -39,8 +39,9 @@ export function ChatPreview() {
   const [messages, setMessages] = useState<Message[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const [state, formAction] = useActionState<LawSummaryState, FormData>(getLawSummary, {
+  const [state, formAction, isPending] = useActionState<LawSummaryState, FormData>(getLawSummary, {
     summary: '',
     sourceArticles: '',
     error: '',
@@ -49,23 +50,41 @@ export function ChatPreview() {
 
   useEffect(() => {
     if (state.error) {
-       setMessages(prev => prev.slice(0, -1));
+       setMessages(prev => {
+        if (prev.length > 0 && prev[prev.length - 1].role === 'user') {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
     }
-    if (state.summary) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: '',
-          summary: state.summary,
-          sourceArticles: state.sourceArticles,
-        },
-      ]);
+    if (state.summary && state.query) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.role === 'user' && lastMessage?.content === state.query) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: '',
+            summary: state.summary,
+            sourceArticles: state.sourceArticles,
+          },
+        ]);
+      }
     }
   }, [state]);
 
-  const handleFormSubmit = (formData: FormData) => {
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo(0, scrollAreaRef.current.scrollHeight);
+    }
+  }, [messages, isPending]);
+
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     const query = formData.get('query') as string;
+
     if (query?.trim()) {
       setMessages((prev) => [...prev, { role: 'user', content: query }]);
       formAction(formData);
@@ -75,10 +94,14 @@ export function ChatPreview() {
 
   const handleQuickReplyClick = (text: string) => {
     if (inputRef.current) {
-        inputRef.current.value = text;
-        const formData = new FormData();
-        formData.append('query', text);
-        handleFormSubmit(formData);
+      inputRef.current.value = text;
+      if(formRef.current) {
+        const formData = new FormData(formRef.current);
+        formData.set('query', text);
+        setMessages((prev) => [...prev, { role: 'user', content: text }]);
+        formAction(formData);
+        formRef.current?.reset();
+      }
     }
   };
 
@@ -105,9 +128,9 @@ export function ChatPreview() {
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0 bg-muted/20">
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-full" ref={scrollAreaRef}>
            <div className="p-4 flex flex-col gap-4">
-            {messages.length === 0 ? (
+            {messages.length === 0 && !isPending ? (
                  <Card className="p-4 bg-background">
                     <p className="font-medium mb-3">Tôi có thể giúp gì cho bạn về Luật Giao thông?</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -158,7 +181,17 @@ export function ChatPreview() {
                     </div>
                 ))
             )}
-            {state.error && (
+            {isPending && (
+              <div className="flex gap-3">
+                  <Avatar className="h-8 w-8 border">
+                      <AvatarFallback className="bg-primary text-primary-foreground"><Bot /></AvatarFallback>
+                  </Avatar>
+                  <div className="rounded-lg p-3 max-w-[80%] text-sm bg-background flex items-center">
+                      <Loader2 className="animate-spin h-5 w-5" />
+                  </div>
+              </div>
+            )}
+            {state.error && state.query && (
                 <div className="flex justify-start">
                      <div className="rounded-lg p-3 max-w-[80%] text-sm bg-destructive/10 text-destructive">
                         <p>{state.error}</p>
@@ -169,8 +202,8 @@ export function ChatPreview() {
         </ScrollArea>
       </CardContent>
       <div className="p-4 border-t">
-        <form ref={formRef} action={handleFormSubmit} className="relative">
-          <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" />
+        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} className="relative">
+          <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending} />
           <SubmitButton />
         </form>
       </div>
