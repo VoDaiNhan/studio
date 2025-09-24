@@ -12,12 +12,12 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const InterpretTrafficQueryInputSchema = z.object({
-  query: z.string().describe('The user query related to traffic laws.'),
+  query: z.string().describe('The user query related to traffic laws in Vietnamese.'),
 });
 export type InterpretTrafficQueryInput = z.infer<typeof InterpretTrafficQueryInputSchema>;
 
 const InterpretTrafficQueryOutputSchema = z.object({
-  interpretedQuery: z.string().describe('The interpreted user query.'),
+  interpretedQuery: z.string().describe('The interpreted user query in Vietnamese.'),
 });
 export type InterpretTrafficQueryOutput = z.infer<typeof InterpretTrafficQueryOutputSchema>;
 
@@ -29,11 +29,11 @@ const prompt = ai.definePrompt({
   name: 'interpretTrafficQueryPrompt',
   input: {schema: InterpretTrafficQueryInputSchema},
   output: {schema: InterpretTrafficQueryOutputSchema},
-  prompt: `You are a helpful assistant that interprets user queries related to traffic laws.
+  prompt: `Bạn là một trợ lý hữu ích chuyên diễn giải các câu hỏi của người dùng liên quan đến luật giao thông bằng tiếng Việt.
 
-  The user will provide a query, and you should interpret the query to extract the intent of the user.
+  Người dùng sẽ cung cấp một câu hỏi, và bạn nên diễn giải câu hỏi đó để trích xuất ý định của người dùng. Trả lời bằng tiếng Việt.
 
-  User Query: {{{query}}}`,
+  Câu hỏi của người dùng: {{{query}}}`,
 });
 
 const interpretTrafficQueryFlow = ai.defineFlow(
