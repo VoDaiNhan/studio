@@ -40,8 +40,9 @@ export function ChatPreview() {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const [state, formAction, isPending] = useActionState<LawSummaryState, FormData>(getLawSummary, {
+  const [state, formAction] = useActionState<LawSummaryState, FormData>(getLawSummary, {
     summary: '',
     sourceArticles: '',
     error: '',
@@ -59,7 +60,7 @@ export function ChatPreview() {
     }
     if (state.summary && state.query) {
       const lastMessage = messages[messages.length - 1];
-      if (lastMessage?.role === 'user' && lastMessage?.content === state.query) {
+      if (lastMessage?.role === 'user') {
         setMessages((prev) => [
           ...prev,
           {
@@ -87,7 +88,9 @@ export function ChatPreview() {
 
     if (query?.trim()) {
       setMessages((prev) => [...prev, { role: 'user', content: query }]);
-      formAction(formData);
+      startTransition(() => {
+        formAction(formData);
+      });
       formRef.current?.reset();
     }
   };
@@ -99,7 +102,9 @@ export function ChatPreview() {
         const formData = new FormData(formRef.current);
         formData.set('query', text);
         setMessages((prev) => [...prev, { role: 'user', content: text }]);
-        formAction(formData);
+        startTransition(() => {
+            formAction(formData);
+        });
         formRef.current?.reset();
       }
     }
@@ -203,7 +208,7 @@ export function ChatPreview() {
         </ScrollArea>
       </CardContent>
       <div className="p-4 border-t">
-        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} className="relative">
+        <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
           <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending} />
           <SubmitButton />
         </form>
