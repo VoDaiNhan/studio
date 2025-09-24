@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState, useRef, useEffect, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { getLawSummary, type LawSummaryState } from '@/app/actions';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -40,7 +40,7 @@ export function ChatPreview() {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [state, formAction] = useFormState<LawSummaryState, FormData>(getLawSummary, {
+  const [state, formAction] = useActionState<LawSummaryState, FormData>(getLawSummary, {
     summary: '',
     sourceArticles: '',
     error: '',
