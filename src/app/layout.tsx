@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'OmniChat',
-  description: 'Customize your chatbot',
+  title: 'Trợ lý Luật Giao thông',
+  description: 'Chatbot tra cứu Luật Giao thông đường bộ Việt Nam',
 };
 
 export default function RootLayout({

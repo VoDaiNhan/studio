@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Bot, Cog, Contact, FileText, Gift, User, BarChart, MessageSquare, LayoutGrid, UserCircle } from 'lucide-react';
+import { Bot, Cog, Database, FileText, BotMessageSquare, LifeBuoy, UserCircle, Scale } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function AppSidebar() {
@@ -16,9 +16,9 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-10 w-10">
-            <Bot className="h-6 w-6 text-primary" />
+            <Scale className="h-6 w-6 text-primary" />
           </Button>
-          <h2 className="text-xl font-semibold tracking-tight">OmniChat</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Trợ lý Luật</h2>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -26,31 +26,31 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton href="#" isActive>
               <Cog className="w-5 h-5" />
-              Configuration
+              Cấu hình
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
-              <BarChart className="w-5 h-5" />
-              Leads
+              <Database className="w-5 h-5" />
+              Nguồn kiến thức
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
-              <MessageSquare className="w-5 h-5" />
-              Embed
+              <BotMessageSquare className="w-5 h-5" />
+              Sân chơi
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
-              <LayoutGrid className="w-5 h-5" />
-              Guide
+              <LifeBuoy className="w-5 h-5" />
+              Hướng dẫn
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <UserCircle className="w-5 h-5" />
-              Profile
+              Tài khoản
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

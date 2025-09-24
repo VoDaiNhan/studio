@@ -30,16 +30,16 @@ export function AppHeader() {
               </AvatarFallback>
             </Avatar>
             <div className="hidden sm:flex flex-col items-start">
-              <span className="font-medium text-sm">Nguyễn Thị Liễu</span>
+              <span className="font-medium text-sm">Admin</span>
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">Nguyễn Thị Liễu</p>
+              <p className="text-sm font-medium leading-none">Admin</p>
               <p className="text-xs leading-none text-muted-foreground">
-                admin@fitlhu.com
+                admin@example.com
               </p>
             </div>
           </DropdownMenuLabel>
