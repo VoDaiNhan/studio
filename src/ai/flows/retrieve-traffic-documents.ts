@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getKnowledgeSources } from '@/app/actions/knowledge';
 
 const RetrieveTrafficDocumentsInputSchema = z.object({
   query: z.string().describe('The user query about traffic laws.'),
@@ -41,12 +42,35 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     inputSchema: RetrieveTrafficDocumentsInputSchema,
     outputSchema: RetrieveTrafficDocumentsOutputSchema,
   },
-  async input => {
-    // Placeholder implementation: simply returns the query as a document.
-    // In a real application, this would involve:
-    // 1. Embedding the query using an embedding model.
-    // 2. Querying a vector database to find relevant document chunks.
-    // 3. Returning the retrieved document chunks.
-    return {documents: [input.query]};
+  async (input) => {
+    const sources = await getKnowledgeSources();
+    const activeSources = sources.filter(s => s.status === 'active');
+    
+    // This is a simplified RAG implementation.
+    // In a real-world scenario, you would:
+    // 1. Chunk the content of the documents (from URLs or text).
+    // 2. Embed the user's query and the document chunks.
+    // 3. Perform a vector similarity search to find the most relevant chunks.
+    // 4. Return the content of those relevant chunks.
+    
+    // For now, we'll just return the titles and URLs of all active sources as context.
+    // This will at least give the summarization AI some context to work with.
+    const documents = activeSources.map(source => {
+        let content = `Document Title: ${source.title}\n`;
+        if (source.url) {
+            content += `Source URL: ${source.url}\n`;
+        }
+        if (source.content) {
+            // Returning the full content can be too large. We'll truncate for this example.
+            content += `Content: ${source.content.substring(0, 500)}...`;
+        }
+        return content;
+    });
+
+    if (documents.length === 0) {
+        return { documents: ["There are no active knowledge sources available to answer the query."] };
+    }
+
+    return { documents };
   }
 );

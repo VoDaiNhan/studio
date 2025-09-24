@@ -1,0 +1,19 @@
+
+[
+  {
+    "id": "1",
+    "type": "url",
+    "title": "Luật Trật tự, an toàn giao thông đường bộ (phần 1)",
+    "url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2024/9/36-2024-qh15.pdf",
+    "createdAt": "2024-07-30T10:00:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "2",
+    "type": "url",
+    "title": "Luật Trật tự, an toàn giao thông đường bộ (phần 2)",
+    "url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2024/9/36-2024-qh15_tiep.pdf",
+    "createdAt": "2024-07-30T10:01:00.000Z",
+    "status": "active"
+  }
+]

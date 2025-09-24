@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -14,22 +14,82 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from './ui/button';
-import { Info, Paintbrush, BrainCircuit, History, FileText, PlusCircle, Upload, Link as LinkIcon, Edit, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
+import type { KnowledgeSource } from '@/lib/knowledge';
+import { getKnowledgeSources, createKnowledgeSource, updateKnowledgeSource, deleteKnowledgeSource } from '@/app/actions/knowledge';
 
-const knowledgeSources = [
-    { type: "pdf", title: "Luật Giao thông đường bộ 2008.pdf", date: "12/04/2023", status: "active" },
-    { type: "txt", title: "Nghị định 100/2019/NĐ-CP.txt", date: "10/03/2023", status: "active" },
-    { type: "url", title: "https://thuvienphapluat.vn/...", date: "05/02/2023", status: "learning" },
-    { type: "pdf", title: "Thông tư 65/2020/TT-BCA.pdf", date: "01/01/2023", status: "error" },
-];
+type DialogState = {
+    open: boolean;
+    mode: 'add' | 'edit';
+    source: KnowledgeSource | null;
+};
 
 export function ChatbotConfiguration() {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [uploadType, setUploadType] = useState<'manual' | 'url'>('manual');
+    const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [dialogState, setDialogState] = useState<DialogState>({ open: false, mode: 'add', source: null });
+    const [uploadType, setUploadType] = useState<'manual' | 'url'>('url');
+
+    useEffect(() => {
+        const fetchSources = async () => {
+            setIsLoading(true);
+            const sources = await getKnowledgeSources();
+            setKnowledgeSources(sources);
+            setIsLoading(false);
+        };
+        fetchSources();
+    }, []);
+
+    const handleOpenDialog = (mode: 'add' | 'edit', source: KnowledgeSource | null = null) => {
+        setDialogState({ open: true, mode, source });
+        if (source?.content) {
+            setUploadType('manual');
+        } else {
+            setUploadType('url');
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setDialogState({ open: false, mode: 'add', source: null });
+    };
+
+    const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const title = formData.get('title') as string;
+        const url = formData.get('url') as string;
+        const content = formData.get('content') as string;
+
+        let result;
+        if (dialogState.mode === 'add') {
+            result = await createKnowledgeSource({ title, url: uploadType === 'url' ? url : undefined, content: uploadType === 'manual' ? content : undefined });
+        } else if (dialogState.source) {
+            result = await updateKnowledgeSource({
+                id: dialogState.source.id,
+                title,
+                url: uploadType === 'url' ? url : undefined,
+                content: uploadType === 'manual' ? content : undefined,
+            });
+        }
+
+        if (result) {
+            const sources = await getKnowledgeSources();
+            setKnowledgeSources(sources);
+        }
+        handleCloseDialog();
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm('Bạn có chắc chắn muốn xóa nguồn kiến thức này?')) {
+            await deleteKnowledgeSource(id);
+            const sources = await getKnowledgeSources();
+            setKnowledgeSources(sources);
+        }
+    };
 
   return (
     <div>
@@ -39,7 +99,7 @@ export function ChatbotConfiguration() {
       </p>
 
       <Tabs defaultValue="knowledge">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="appearance">
             <Paintbrush className="w-4 h-4 mr-2" /> Giao diện
           </TabsTrigger>
@@ -70,7 +130,7 @@ export function ChatbotConfiguration() {
                     <CardTitle className="text-lg">Nguồn kiến thức</CardTitle>
                     <CardDescription>Thêm, sửa hoặc xóa các nguồn thông tin cho chatbot.</CardDescription>
                 </div>
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button onClick={() => handleOpenDialog('add')}>
                     <PlusCircle className="w-4 h-4 mr-2"/>
                     Thêm nguồn
                 </Button>
@@ -83,31 +143,39 @@ export function ChatbotConfiguration() {
                         <div>Trạng thái</div>
                         <div className="text-right">Hành động</div>
                     </div>
-                    {knowledgeSources.map((source, index) => (
-                        <div key={index} className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 items-center p-3 border-t text-sm">
-                            <div className="flex items-center gap-2 font-medium">
-                                <FileText className="w-4 h-4 text-primary"/>
-                                <span className="truncate">{source.title}</span>
-                            </div>
-                            <div>{source.date}</div>
-                            <div>
-                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                    source.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                    source.status === 'learning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`
-                                }>
-                                    {source.status === 'active' ? 'Đang hoạt động' : source.status === 'learning' ? 'Đang học' : 'Lỗi'}
-                                </span>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <Edit className="h-4 w-4"/>
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                    <Trash2 className="h-4 w-4"/>
-                                </Button>
-                            </div>
+                    {isLoading ? (
+                        <div className="p-4 text-center">
+                            <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                         </div>
-                    ))}
+                    ) : knowledgeSources.length === 0 ? (
+                         <div className="p-4 text-center text-sm text-muted-foreground">Chưa có nguồn kiến thức nào.</div>
+                    ) : (
+                        knowledgeSources.map((source) => (
+                            <div key={source.id} className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 items-center p-3 border-t text-sm">
+                                <div className="flex items-center gap-2 font-medium">
+                                    <FileText className="w-4 h-4 text-primary"/>
+                                    <span className="truncate">{source.title}</span>
+                                </div>
+                                <div>{new Date(source.createdAt).toLocaleDateString()}</div>
+                                <div>
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                        source.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                        source.status === 'learning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`
+                                    }>
+                                        {source.status === 'active' ? 'Đang hoạt động' : source.status === 'learning' ? 'Đang học' : 'Lỗi'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog('edit', source)}>
+                                        <Edit className="h-4 w-4"/>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(source.id)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </CardContent>
           </Card>
@@ -126,52 +194,53 @@ export function ChatbotConfiguration() {
           </Card>
         </TabsContent>
       </Tabs>
-       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl">
+       <Dialog open={dialogState.open} onOpenChange={handleCloseDialog}>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa nguồn kiến thức</DialogTitle>
+            <DialogTitle>{dialogState.mode === 'add' ? 'Thêm nguồn kiến thức mới' : 'Chỉnh sửa nguồn kiến thức'}</DialogTitle>
           </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <Button variant={uploadType === 'manual' ? 'default' : 'outline'} onClick={() => setUploadType('manual')}>
-                    <Upload className="w-4 h-4 mr-2"/>
-                    Tải lên thủ công
-                </Button>
-                <Button variant={uploadType === 'url' ? 'default' : 'outline'} onClick={() => setUploadType('url')}>
-                    <LinkIcon className="w-4 h-4 mr-2"/>
-                    Từ URL
-                </Button>
-            </div>
+          <form onSubmit={handleSave}>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <Button type="button" variant={uploadType === 'url' ? 'default' : 'outline'} onClick={() => setUploadType('url')}>
+                        <LinkIcon className="w-4 h-4 mr-2"/>
+                        Từ URL
+                    </Button>
+                    <Button type="button" variant={uploadType === 'manual' ? 'default' : 'outline'} onClick={() => setUploadType('manual')}>
+                        <Upload className="w-4 h-4 mr-2"/>
+                        Nhập thủ công
+                    </Button>
+                </div>
 
-            {uploadType === 'manual' ? (
-                <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="title">Tiêu đề</Label>
-                        <Input id="title" placeholder="Ví dụ: Luật Giao thông đường bộ 2008" />
+                {uploadType === 'manual' ? (
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="title">Tiêu đề</Label>
+                            <Input name="title" id="title" placeholder="Ví dụ: Luật Giao thông đường bộ 2008" defaultValue={dialogState.source?.title || ''} required />
+                        </div>
+                         <div>
+                            <Label htmlFor="content">Nội dung (văn bản thuần túy)</Label>
+                            <Textarea name="content" id="content" placeholder="Dán nội dung tài liệu vào đây..." className="min-h-[200px]" defaultValue={dialogState.source?.content || ''} required />
+                        </div>
                     </div>
-                     <div>
-                        <Label htmlFor="content">Nội dung (hỗ trợ Markdown)</Label>
-                        <Textarea id="content" placeholder="Dán nội dung tài liệu vào đây..." className="min-h-[200px]" />
+                ) : (
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="title">Tiêu đề</Label>
+                            <Input name="title" id="title" placeholder="Tên tài liệu sẽ được tự động điền từ URL" defaultValue={dialogState.source?.title || ''} />
+                        </div>
+                        <div>
+                            <Label htmlFor="url">URL</Label>
+                            <Input name="url" id="url" placeholder="https://example.com/document.pdf" defaultValue={dialogState.source?.url || ''} required type="url" />
+                        </div>
                     </div>
-                    <div className="p-4 text-center border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50">
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Kéo và thả file PDF, TXT hoặc DOCX vào đây, hoặc <span className="font-semibold text-primary">chọn file</span></p>
-                        <p className="text-xs text-muted-foreground mt-1">Kích thước file tối đa 10MB</p>
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="url">URL</Label>
-                        <Input id="url" placeholder="https://example.com/document.pdf" />
-                    </div>
-                </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-            <Button>Lưu nguồn</Button>
-          </DialogFooter>
+                )}
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>Hủy</Button>
+                <Button type="submit">Lưu nguồn</Button>
+              </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
