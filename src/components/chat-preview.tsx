@@ -140,6 +140,7 @@ export function ChatPreview() {
                             variant="outline" 
                             className="justify-start h-auto py-2"
                             onClick={() => handleQuickReplyClick(reply.text)}
+                            disabled={isPending}
                         >
                             <reply.icon className="w-4 h-4 mr-2 shrink-0" />
                             <span className="whitespace-normal text-left">{reply.text}</span>
