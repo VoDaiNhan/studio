@@ -31,6 +31,7 @@ const CreateKnowledgeSourceSchema = z.object({
   title: z.string().optional(),
   url: z.string().url().optional(),
   content: z.string().optional(),
+  effectiveDate: z.string().optional(),
 }).refine(data => data.url || data.content, {
   message: "Either URL or content must be provided.",
 });
@@ -42,6 +43,7 @@ const UpdateKnowledgeSourceSchema = z.object({
   title: z.string().optional(),
   url: z.string().url().optional(),
   content: z.string().optional(),
+  effectiveDate: z.string().optional(),
 }).refine(data => data.url || data.content, {
     message: "Either URL or content must be provided.",
 });
@@ -77,7 +79,7 @@ export async function createKnowledgeSource(input: z.infer<typeof CreateKnowledg
     type: input.url ? 'url' : 'manual',
     url: input.url,
     content: input.content,
-    createdAt: new Date().toISOString(),
+    effectiveDate: input.effectiveDate || new Date().toISOString(),
     status: 'learning', // New sources start with 'learning' status
   };
 
@@ -115,6 +117,7 @@ export async function updateKnowledgeSource(input: z.infer<typeof UpdateKnowledg
     type: input.url ? 'url' : 'manual',
     url: input.url,
     content: input.content,
+    effectiveDate: input.effectiveDate || originalSource.effectiveDate,
     status: 'learning'
   };
 

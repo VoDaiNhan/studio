@@ -4,6 +4,6 @@ export interface KnowledgeSource {
   title: string;
   url?: string;
   content?: string;
-  createdAt: string; // ISO date string
+  effectiveDate: string; // ISO date string
   status: 'active' | 'learning' | 'error';
 }

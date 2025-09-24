@@ -14,11 +14,15 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from './ui/button';
-import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2 } from 'lucide-react';
+import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { KnowledgeSource } from '@/lib/knowledge';
 import { getKnowledgeSources, createKnowledgeSource, updateKnowledgeSource, deleteKnowledgeSource } from '@/app/actions/knowledge';
 
@@ -33,6 +37,7 @@ export function ChatbotConfiguration() {
     const [isLoading, setIsLoading] = useState(true);
     const [dialogState, setDialogState] = useState<DialogState>({ open: false, mode: 'add', source: null });
     const [uploadType, setUploadType] = useState<'manual' | 'url'>('url');
+    const [effectiveDate, setEffectiveDate] = useState<Date | undefined>();
 
     useEffect(() => {
         const fetchSources = async () => {
@@ -46,15 +51,22 @@ export function ChatbotConfiguration() {
 
     const handleOpenDialog = (mode: 'add' | 'edit', source: KnowledgeSource | null = null) => {
         setDialogState({ open: true, mode, source });
-        if (source?.content) {
-            setUploadType('manual');
+        if (source) {
+            setEffectiveDate(new Date(source.effectiveDate));
+            if (source.content) {
+                setUploadType('manual');
+            } else {
+                setUploadType('url');
+            }
         } else {
+            setEffectiveDate(new Date());
             setUploadType('url');
         }
     };
 
     const handleCloseDialog = () => {
         setDialogState({ open: false, mode: 'add', source: null });
+        setEffectiveDate(undefined);
     };
 
     const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -64,15 +76,20 @@ export function ChatbotConfiguration() {
         const url = formData.get('url') as string;
         const content = formData.get('content') as string;
 
+        const data = {
+            title,
+            url: uploadType === 'url' ? url : undefined,
+            content: uploadType === 'manual' ? content : undefined,
+            effectiveDate: effectiveDate?.toISOString(),
+        }
+
         let result;
         if (dialogState.mode === 'add') {
-            result = await createKnowledgeSource({ title, url: uploadType === 'url' ? url : undefined, content: uploadType === 'manual' ? content : undefined });
+            result = await createKnowledgeSource(data);
         } else if (dialogState.source) {
             result = await updateKnowledgeSource({
                 id: dialogState.source.id,
-                title,
-                url: uploadType === 'url' ? url : undefined,
-                content: uploadType === 'manual' ? content : undefined,
+                ...data
             });
         }
 
@@ -139,7 +156,7 @@ export function ChatbotConfiguration() {
                 <div className="border rounded-md">
                     <div className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 font-medium p-3 bg-muted/50 text-sm">
                         <div>Tên file</div>
-                        <div>Ngày tải lên</div>
+                        <div>Ngày có hiệu lực</div>
                         <div>Trạng thái</div>
                         <div className="text-right">Hành động</div>
                     </div>
@@ -156,7 +173,7 @@ export function ChatbotConfiguration() {
                                     <FileText className="w-4 h-4 text-primary"/>
                                     <span className="truncate">{source.title}</span>
                                 </div>
-                                <div>{new Date(source.createdAt).toLocaleDateString()}</div>
+                                <div>{new Date(source.effectiveDate).toLocaleDateString('vi-VN')}</div>
                                 <div>
                                     <span className={`px-2 py-1 text-xs rounded-full ${
                                         source.status === 'active' ? 'bg-green-100 text-green-800' : 
@@ -235,6 +252,31 @@ export function ChatbotConfiguration() {
                         </div>
                     </div>
                 )}
+                 <div>
+                    <Label>Ngày có hiệu lực</Label>
+                     <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !effectiveDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {effectiveDate ? format(effectiveDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={effectiveDate}
+                          onSelect={setEffectiveDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>Hủy</Button>
