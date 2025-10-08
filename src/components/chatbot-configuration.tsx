@@ -14,7 +14,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from './ui/button';
-import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,6 +25,9 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { KnowledgeSource } from '@/lib/knowledge';
 import { getKnowledgeSources, createKnowledgeSource, updateKnowledgeSource, deleteKnowledgeSource } from '@/app/actions/knowledge';
+import { Separator } from './ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 type DialogState = {
     open: boolean;
@@ -116,12 +119,15 @@ export function ChatbotConfiguration() {
       </p>
 
       <Tabs defaultValue="knowledge">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="appearance">
             <Paintbrush className="w-4 h-4 mr-2" /> Giao diện
           </TabsTrigger>
           <TabsTrigger value="knowledge">
             <BrainCircuit className="w-4 h-4 mr-2" /> Kiến thức
+          </TabsTrigger>
+          <TabsTrigger value="scenario">
+             <Bot className="w-4 h-4 mr-2" /> Kịch bản
           </TabsTrigger>
            <TabsTrigger value="history">
             <History className="w-4 h-4 mr-2" /> Lịch sử
@@ -135,8 +141,55 @@ export function ChatbotConfiguration() {
                 Tùy chỉnh giao diện và cảm nhận của chatbot.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p>Cài đặt giao diện sẽ ở đây.</p>
+            <CardContent className="space-y-8">
+              <div className="space-y-4">
+                  <h3 className="font-medium text-lg">Chung</h3>
+                   <div className="space-y-2">
+                      <Label htmlFor="displayName">Tên hiển thị</Label>
+                      <Input id="displayName" defaultValue="Trợ lý Luật Giao thông" />
+                      <p className="text-sm text-muted-foreground">Tên này sẽ được hiển thị cho người dùng cuối.</p>
+                   </div>
+                   <div className="space-y-2">
+                      <Label htmlFor="welcomeMessage">Lời chào</Label>
+                      <Textarea id="welcomeMessage" defaultValue="Chào bạn! Tôi có thể giúp gì cho bạn về Luật Giao thông đường bộ?" />
+                      <p className="text-sm text-muted-foreground">Tin nhắn đầu tiên chatbot sẽ gửi.</p>
+                   </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ai-persona">Persona của AI</Label>
+                        <Select defaultValue="expert">
+                            <SelectTrigger id="ai-persona">
+                                <SelectValue placeholder="Chọn một persona" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="expert">Chuyên gia</SelectItem>
+                                <SelectItem value="friendly">Thân thiện</SelectItem>
+                                <SelectItem value="professional">Chuyên nghiệp</SelectItem>
+                            </SelectContent>
+                        </Select>
+                         <p className="text-sm text-muted-foreground">Điều này sẽ thay đổi giọng văn và phong cách trả lời của AI.</p>
+                    </div>
+              </div>
+              <Separator />
+               <div className="space-y-4">
+                  <h3 className="font-medium text-lg">Thương hiệu & Màu sắc</h3>
+                  <div className="flex items-center gap-4">
+                    <div className='space-y-2'>
+                        <Label>Logo</Label>
+                        <Avatar className="h-20 w-20">
+                            <AvatarImage src="https://picsum.photos/seed/logo/200" />
+                            <AvatarFallback><Scale /></AvatarFallback>
+                        </Avatar>
+                    </div>
+                    <div className='space-y-2'>
+                        <Label>Biểu tượng Chatbot</Label>
+                        <Avatar className="h-20 w-20">
+                            <AvatarImage src="https://picsum.photos/seed/bot/200" />
+                            <AvatarFallback><Bot /></AvatarFallback>
+                        </Avatar>
+                    </div>
+                  </div>
+                  <Button variant="outline">Tải lên</Button>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -194,6 +247,19 @@ export function ChatbotConfiguration() {
                         ))
                     )}
                 </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="scenario">
+          <Card>
+            <CardHeader>
+              <CardTitle>Kịch bản</CardTitle>
+              <CardDescription>
+                Xây dựng các luồng hội thoại có cấu trúc cho chatbot.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>Chức năng xây dựng kịch bản sẽ được hiển thị ở đây.</p>
             </CardContent>
           </Card>
         </TabsContent>

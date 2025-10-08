@@ -5,9 +5,8 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Bot, Cog, Database, FileText, BotMessageSquare, LifeBuoy, UserCircle, Scale } from 'lucide-react';
+import { BotMessageSquare, Cog, Database, LifeBuoy, Scale, UserCircle } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function AppSidebar() {

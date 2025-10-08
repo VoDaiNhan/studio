@@ -1,4 +1,3 @@
-
 [
   {
     "id": "1",
@@ -14,6 +13,14 @@
     "title": "Luật Trật tự, an toàn giao thông đường bộ (phần 2)",
     "url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2024/9/36-2024-qh15_tiep.pdf",
     "effectiveDate": "2025-01-01T00:00:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "1758703790469",
+    "title": "Về điều chỉnh chủ trương đầu tư Dự án đầu tư xây dựng đường bộ cao tốc Biên Hòa - Vũng Tàu giai đoạn 1",
+    "type": "url",
+    "url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/7/221-qh15.signed.pdf",
+    "effectiveDate": "2025-09-24T08:49:37.218Z",
     "status": "active"
   }
 ]
