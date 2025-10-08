@@ -1,0 +1,72 @@
+/**
+ * @fileOverview Firestore Security Rules for the Traffic Law Chatbot.
+ *
+ * Core Philosophy:
+ * This ruleset allows public read access to all data (traffic laws, user queries,
+ * law bot responses, and feedback). Write access is explicitly denied to all clients.
+ *
+ * Data Structure:
+ * The Firestore database consists of four top-level collections:
+ *   - /trafficLaws/{trafficLawId}: Stores traffic law data.
+ *   - /userQueries/{userQueryId}: Stores user queries.
+ *   - /lawBotResponses/{lawBotResponseId}: Stores chatbot responses.
+ *   - /feedbacks/{feedbackId}: Stores user feedback.
+ *
+ * Key Security Decisions:
+ * - All collections are publicly readable, including `get` and `list` operations.
+ * - All write operations (create, update, delete) are strictly forbidden to client applications.
+ * - The rules are designed for a backend-driven data modification model.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows public read access to traffic law documents.  Write access is denied.
+     * @path /trafficLaws/{trafficLawId}
+     * @allow (get, list): Any user (authenticated or unauthenticated) can read traffic law data.
+     * @deny (create, update, delete): No user can create, update, or delete traffic law data.
+     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     */
+    match /trafficLaws/{trafficLawId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Allows public read access to user query documents.  Write access is denied.
+     * @path /userQueries/{userQueryId}
+     * @allow (get, list): Any user (authenticated or unauthenticated) can read user query data.
+     * @deny (create, update, delete): No user can create, update, or delete user query data.
+     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     */
+    match /userQueries/{userQueryId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Allows public read access to law bot response documents.  Write access is denied.
+     * @path /lawBotResponses/{lawBotResponseId}
+     * @allow (get, list): Any user (authenticated or unauthenticated) can read law bot response data.
+     * @deny (create, update, delete): No user can create, update, or delete law bot response data.
+     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     */
+    match /lawBotResponses/{lawBotResponseId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Allows public read access to feedback documents.  Write access is denied.
+     * @path /feedbacks/{feedbackId}
+     * @allow (get, list): Any user (authenticated or unauthenticated) can read feedback data.
+     * @deny (create, update, delete): No user can create, update, or delete feedback data.
+     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     */
+    match /feedbacks/{feedbackId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+  }
+}
