@@ -1,4 +1,5 @@
 'use client';
+import * as React from 'react';
 import { useState, useEffect, useTransition } from 'react';
 import {
   Card,
@@ -15,14 +16,14 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from './ui/button';
-import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale, Image as ImageIcon } from 'lucide-react';
+import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { KnowledgeSource } from '@/lib/knowledge';
 import { getKnowledgeSources, createKnowledgeSource, updateKnowledgeSource, deleteKnowledgeSource } from '@/app/actions/knowledge';
@@ -32,6 +33,10 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { DateRange } from "react-day-picker";
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { Skeleton } from './ui/skeleton';
 
 const AppearanceConfigSchema = z.object({
   displayName: z.string(),
@@ -53,6 +58,16 @@ type ChatbotConfigurationProps = {
     setConfig: (config: AppearanceConfig) => void;
 };
 
+type Conversation = {
+    id: string;
+    userQuery: string;
+    botSummary: string;
+    timestamp: {
+      toDate: () => Date;
+    };
+    isVerified: boolean;
+};
+
 export function ChatbotConfiguration({ config, setConfig }: ChatbotConfigurationProps) {
     const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +78,27 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     const [isPending, startTransition] = useTransition();
     const [logoFileName, setLogoFileName] = useState('Chưa có tệp nào được chọn');
     const [chatbotIconFileName, setChatbotIconFileName] = useState('Chưa có tệp nào được chọn');
+    const [date, setDate] = React.useState<DateRange | undefined>({
+      from: subDays(new Date(), 20),
+      to: new Date(),
+    });
+    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+    const firestore = useFirestore();
+
+    const conversationsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'conversations'), orderBy('timestamp', 'desc'));
+    }, [firestore]);
+
+    const { data: conversations, isLoading: isLoadingHistory } = useCollection<Conversation>(conversationsQuery);
+
+    useEffect(() => {
+        if (conversations && conversations.length > 0 && !selectedConversationId) {
+            setSelectedConversationId(conversations[0].id);
+        }
+    }, [conversations, selectedConversationId]);
+
 
     useEffect(() => {
         const fetchSources = async () => {
@@ -125,6 +161,14 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         handleCloseDialog();
     };
     
+    const handleDelete = async (id: string) => {
+        if (confirm('Bạn có chắc chắn muốn xóa nguồn kiến thức này không?')) {
+            await deleteKnowledgeSource(id);
+            const sources = await getKnowledgeSources();
+            setKnowledgeSources(sources);
+        }
+    }
+    
     const handleSaveAppearance = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         
@@ -168,6 +212,9 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         setConfig({ ...config, [field]: value });
     };
 
+    const selectedConversation = conversations?.find(c => c.id === selectedConversationId);
+
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-1">Cấu hình Chatbot</h2>
@@ -176,15 +223,12 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
       </p>
 
       <Tabs defaultValue="appearance">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="appearance">
             <Paintbrush className="w-4 h-4 mr-2" /> Giao diện
           </TabsTrigger>
           <TabsTrigger value="knowledge">
             <BrainCircuit className="w-4 h-4 mr-2" /> Kiến thức
-          </TabsTrigger>
-          <TabsTrigger value="scenario">
-             <Bot className="w-4 h-4 mr-2" /> Kịch bản
           </TabsTrigger>
            <TabsTrigger value="history">
             <History className="w-4 h-4 mr-2" /> Lịch sử
@@ -346,29 +390,125 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="scenario">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kịch bản</CardTitle>
-              <CardDescription>
-                Xây dựng các luồng hội thoại có cấu trúc cho chatbot.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Chức năng xây dựng kịch bản sẽ được hiển thị ở đây.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
         <TabsContent value="history">
-          <Card>
+           <Card>
             <CardHeader>
-              <CardTitle>Lịch sử</CardTitle>
-              <CardDescription>
-                Xem lại lịch sử các cuộc hội thoại.
-              </CardDescription>
+              <CardTitle>Lịch sử trò chuyện</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardDescription>
+                  Xem lại và quản lý các cuộc trò chuyện đã diễn ra.
+                </CardDescription>
+                <div className={cn("grid gap-2")}>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                          "w-[300px] justify-start text-left font-normal",
+                          !date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date?.from ? (
+                          date.to ? (
+                            <>
+                              {format(date.from, "LLL dd, y")} -{" "}
+                              {format(date.to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(date.from, "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Chọn ngày</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={date?.from}
+                        selected={date}
+                        onSelect={setDate}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <p>Lịch sử hội thoại sẽ được hiển thị ở đây.</p>
+            <CardContent className="grid grid-cols-3 gap-6">
+                <div className="col-span-1 border-r pr-4">
+                     {isLoadingHistory ? (
+                        <div className="space-y-3">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                        </div>
+                     ) : (
+                        <div className="flex flex-col gap-2">
+                            {conversations?.map((conv) => (
+                                <button
+                                    key={conv.id}
+                                    onClick={() => setSelectedConversationId(conv.id)}
+                                    className={cn(
+                                        "w-full text-left p-3 rounded-md transition-colors",
+                                        selectedConversationId === conv.id ? "bg-muted" : "hover:bg-muted/50"
+                                    )}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-medium text-sm truncate pr-2 flex-1">{conv.userQuery}</p>
+                                        {conv.isVerified && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0"/>}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {conv.timestamp?.toDate().toLocaleTimeString('vi-VN')} - {conv.timestamp?.toDate().toLocaleDateString('vi-VN')}
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
+                     )}
+                </div>
+                <div className="col-span-2">
+                    {selectedConversation ? (
+                        <div className="space-y-6">
+                            <div className="flex items-start gap-4">
+                                <Avatar className="h-9 w-9 border">
+                                    <AvatarFallback>
+                                        <User/>
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="rounded-lg p-3 bg-muted max-w-xl">
+                                    <p className="font-semibold text-sm">Câu hỏi</p>
+                                    <p className="text-sm">{selectedConversation.userQuery}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-4">
+                                <Avatar className="h-9 w-9 border">
+                                    <AvatarFallback className="bg-primary text-primary-foreground">
+                                        <Bot/>
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="rounded-lg p-3 bg-primary/10 max-w-xl">
+                                    <p className="font-semibold text-sm text-primary">Câu trả lời</p>
+                                    <p className="text-sm">{selectedConversation.botSummary}</p>
+                                    {selectedConversation.sourceArticles && (
+                                        <>
+                                            <Separator className="my-2" />
+                                            <p className="text-xs text-muted-foreground">
+                                                <span className="font-semibold">Nguồn:</span> {selectedConversation.sourceArticles}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>Chọn một cuộc trò chuyện để xem chi tiết</p>
+                        </div>
+                    )}
+                </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -451,3 +591,5 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     </div>
   );
 }
+
+    

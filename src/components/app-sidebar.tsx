@@ -6,7 +6,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { BotMessageSquare, Cog, Database, LifeBuoy, Scale, UserCircle } from 'lucide-react';
+import { BotMessageSquare, Cog, Database, LifeBuoy, Scale, UserCircle, History } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function AppSidebar() {
@@ -32,6 +32,12 @@ export function AppSidebar() {
             <SidebarMenuButton href="#">
               <Database className="w-5 h-5" />
               Nguồn kiến thức
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton href="#">
+              <History className="w-5 h-5" />
+              Lịch sử
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
