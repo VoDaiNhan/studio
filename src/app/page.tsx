@@ -10,16 +10,16 @@ export default async function Home() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="flex h-screen overflow-hidden">
         <AppSidebar />
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 overflow-hidden">
           <AppHeader />
           <SidebarInset>
-            <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <main className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
               <div className="lg:col-span-2">
                 <ChatbotConfiguration initialConfig={config} />
               </div>
-              <div>
+              <div className="sticky top-6">
                 <ChatPreview config={config} />
               </div>
             </main>
