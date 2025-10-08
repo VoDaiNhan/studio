@@ -15,7 +15,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from './ui/button';
-import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale } from 'lucide-react';
+import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale, Image as ImageIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -57,6 +57,8 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
     const [effectiveDate, setEffectiveDate] = useState<Date | undefined>();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
+    const [logoFileName, setLogoFileName] = useState('Chưa có tệp nào được chọn');
+    const [chatbotIconFileName, setChatbotIconFileName] = useState('Chưa có tệp nào được chọn');
 
     useEffect(() => {
         const fetchSources = async () => {
@@ -164,6 +166,14 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
             }
         });
     };
+    
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, setFileName: React.Dispatch<React.SetStateAction<string>>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            setFileName(event.target.files[0].name);
+        } else {
+            setFileName('Chưa có tệp nào được chọn');
+        }
+    };
 
   return (
     <div>
@@ -225,31 +235,62 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
                         </div>
                   </div>
                   <Separator />
-                   <div className="space-y-4">
-                      <h3 className="font-medium text-lg">Thương hiệu & Màu sắc</h3>
-                      <div className="flex items-center gap-4">
-                        <div className='space-y-2'>
-                            <Label>Logo</Label>
-                            <Avatar className="h-20 w-20">
-                                <AvatarImage src="https://picsum.photos/seed/logo/200" />
-                                <AvatarFallback><Scale /></AvatarFallback>
-                            </Avatar>
+                   <div className="space-y-6">
+                        <h3 className="font-medium text-lg">Thương hiệu &amp; Màu sắc</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="primaryColor">Màu chính</Label>
+                                <div className="relative">
+                                    <Input id="primaryColor" name="primaryColor" type="color" defaultValue="#2563EB" className="p-1 h-10 w-full" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="accentColor">Màu nhấn</Label>
+                                <Input id="accentColor" name="accentColor" type="color" defaultValue="#FBBF24" className="p-1 h-10 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="backgroundColor">Màu nền</Label>
+                                <Input id="backgroundColor" name="backgroundColor" type="color" defaultValue="#F3F4F6" className="p-1 h-10 w-full" />
+                            </div>
                         </div>
-                        <div className='space-y-2'>
-                            <Label>Biểu tượng Chatbot</Label>
-                            <Avatar className="h-20 w-20">
-                                <AvatarImage src="https://picsum.photos/seed/bot/200" />
-                                <AvatarFallback><Bot /></AvatarFallback>
-                            </Avatar>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="logo-upload">Logo</Label>
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-12 w-12 rounded-md">
+                                        <AvatarFallback><ImageIcon className="h-6 w-6 text-muted-foreground" /></AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <Input id="logo-upload" name="logo" type="file" className="hidden" onChange={(e) => handleFileChange(e, setLogoFileName)} />
+                                        <Label htmlFor="logo-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                            Chọn tệp
+                                        </Label>
+                                        <span className="ml-3 text-sm text-muted-foreground">{logoFileName}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="chatbot-icon-upload">Biểu tượng Chatbot</Label>
+                                <div className="flex items-center gap-4">
+                                     <Avatar className="h-12 w-12 rounded-full">
+                                        <AvatarFallback><Bot className="h-6 w-6 text-muted-foreground" /></AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <Input id="chatbot-icon-upload" name="chatbotIcon" type="file" className="hidden" onChange={(e) => handleFileChange(e, setChatbotIconFileName)} />
+                                        <Label htmlFor="chatbot-icon-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                            Chọn tệp
+                                        </Label>
+                                        <span className="ml-3 text-sm text-muted-foreground">{chatbotIconFileName}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                      </div>
-                      <Button variant="outline" type="button">Tải lên</Button>
                    </div>
                 </CardContent>
                  <CardFooter className="border-t px-6 py-4">
                     <Button type="submit" disabled={isPending}>
-                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Lưu thay đổi
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paintbrush className="mr-2 h-4 w-4" />}
+                        Lưu Giao diện
                     </Button>
                 </CardFooter>
               </Card>
@@ -417,3 +458,5 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
     </div>
   );
 }
+
+    
