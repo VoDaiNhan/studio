@@ -1,72 +1,105 @@
 /**
- * @fileOverview Firestore Security Rules for the Traffic Law Chatbot.
+ * @fileoverview Firestore Security Rules for the traffic law chatbot application.
  *
  * Core Philosophy:
- * This ruleset allows public read access to all data (traffic laws, user queries,
- * law bot responses, and feedback). Write access is explicitly denied to all clients.
+ * This ruleset prioritizes data accessibility for public consumption.
+ * All data except the conversation history is publicly readable, and write operations are disallowed except for the conversation history, which is anonymously writeable.
  *
  * Data Structure:
- * The Firestore database consists of four top-level collections:
- *   - /trafficLaws/{trafficLawId}: Stores traffic law data.
- *   - /userQueries/{userQueryId}: Stores user queries.
- *   - /lawBotResponses/{lawBotResponseId}: Stores chatbot responses.
- *   - /feedbacks/{feedbackId}: Stores user feedback.
+ * - /conversations/{conversationId}: Stores chat history (user queries, bot responses, etc.).  Anonymously writeable.
+ * - /trafficLaws/{trafficLawId}: Stores traffic law data. Publicly readable.
+ * - /userQueries/{userQueryId}: Stores user queries. Publicly readable.
+ * - /lawBotResponses/{lawBotResponseId}: Stores chatbot responses. Publicly readable.
+ * - /feedbacks/{feedbackId}: Stores user feedback. Publicly readable.
  *
  * Key Security Decisions:
- * - All collections are publicly readable, including `get` and `list` operations.
- * - All write operations (create, update, delete) are strictly forbidden to client applications.
- * - The rules are designed for a backend-driven data modification model.
+ * - User listing is generally disallowed for privacy.
+ * - Anonymous users can create conversation histories.
+ * - All other collections are publicly readable to facilitate open access to traffic law information.
+ * - No validation is done on data shapes.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to traffic law documents.  Write access is denied.
+     * @description Manages access to the conversation history. Allows anonymous users to create new conversations.
+     * @path /conversations/{conversationId}
+     * @allow (create) User is anonymous.
+     * @deny (read, update, delete) No read, update, or delete access for any users.
+     * @principle Allows anonymous users to create conversations but restricts other operations.
+     */
+    match /conversations/{conversationId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Allows public read access to traffic laws.
      * @path /trafficLaws/{trafficLawId}
-     * @allow (get, list): Any user (authenticated or unauthenticated) can read traffic law data.
-     * @deny (create, update, delete): No user can create, update, or delete traffic law data.
-     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     * @allow (get, list) Any user can read traffic laws.
+     * @deny (create, update, delete) No write access for any users.
+     * @principle Allows public read access to traffic laws.
      */
     match /trafficLaws/{trafficLawId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to user query documents.  Write access is denied.
+     * @description Allows public read access to user queries.
      * @path /userQueries/{userQueryId}
-     * @allow (get, list): Any user (authenticated or unauthenticated) can read user query data.
-     * @deny (create, update, delete): No user can create, update, or delete user query data.
-     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     * @allow (get, list) Any user can read user queries.
+     * @deny (create, update, delete) No write access for any users.
+     * @principle Allows public read access to user queries.
      */
     match /userQueries/{userQueryId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to law bot response documents.  Write access is denied.
+     * @description Allows public read access to law bot responses.
      * @path /lawBotResponses/{lawBotResponseId}
-     * @allow (get, list): Any user (authenticated or unauthenticated) can read law bot response data.
-     * @deny (create, update, delete): No user can create, update, or delete law bot response data.
-     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     * @allow (get, list) Any user can read law bot responses.
+     * @deny (create, update, delete) No write access for any users.
+     * @principle Allows public read access to law bot responses.
      */
     match /lawBotResponses/{lawBotResponseId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to feedback documents.  Write access is denied.
+     * @description Allows public read access to user feedback.
      * @path /feedbacks/{feedbackId}
-     * @allow (get, list): Any user (authenticated or unauthenticated) can read feedback data.
-     * @deny (create, update, delete): No user can create, update, or delete feedback data.
-     * @principle Allows public data retrieval while preventing unauthorized data modification.
+     * @allow (get, list) Any user can read user feedback.
+     * @deny (create, update, delete) No write access for any users.
+     * @principle Allows public read access to user feedback.
      */
     match /feedbacks/{feedbackId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
+  }
+
+  // Helper function to determine if the user is signed in (anonymous or not)
+  function isSignedIn() {
+    return request.auth != null;
   }
 }
