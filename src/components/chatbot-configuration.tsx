@@ -37,6 +37,9 @@ const AppearanceConfigSchema = z.object({
   displayName: z.string(),
   welcomeMessage: z.string(),
   aiPersona: z.enum(['expert', 'friendly', 'professional']),
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 
 type DialogState = {
@@ -46,10 +49,11 @@ type DialogState = {
 };
 
 type ChatbotConfigurationProps = {
-    initialConfig: AppearanceConfig;
+    config: AppearanceConfig;
+    setConfig: (config: AppearanceConfig) => void;
 };
 
-export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProps) {
+export function ChatbotConfiguration({ config, setConfig }: ChatbotConfigurationProps) {
     const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dialogState, setDialogState] = useState<DialogState>({ open: false, mode: 'add', source: null });
@@ -120,26 +124,11 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
         }
         handleCloseDialog();
     };
-
-    const handleDelete = async (id: string) => {
-        if (confirm('Bạn có chắc chắn muốn xóa nguồn kiến thức này?')) {
-            await deleteKnowledgeSource(id);
-            const sources = await getKnowledgeSources();
-            setKnowledgeSources(sources);
-        }
-    };
     
     const handleSaveAppearance = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const formData = new FormData(event.currentTarget);
         
-        const newConfig = {
-            displayName: formData.get('displayName') as string,
-            welcomeMessage: formData.get('welcomeMessage') as string,
-            aiPersona: formData.get('ai-persona') as 'expert' | 'friendly' | 'professional',
-        };
-
-        const validatedData = AppearanceConfigSchema.safeParse(newConfig);
+        const validatedData = AppearanceConfigSchema.safeParse(config);
 
         if (!validatedData.success) {
              toast({
@@ -173,6 +162,10 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
         } else {
             setFileName('Chưa có tệp nào được chọn');
         }
+    };
+
+    const handleConfigChange = (field: keyof AppearanceConfig, value: string) => {
+        setConfig({ ...config, [field]: value });
     };
 
   return (
@@ -211,17 +204,17 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
                       <h3 className="font-medium text-lg">Chung</h3>
                        <div className="space-y-2">
                           <Label htmlFor="displayName">Tên hiển thị</Label>
-                          <Input name="displayName" id="displayName" defaultValue={initialConfig.displayName} />
+                          <Input name="displayName" id="displayName" value={config.displayName} onChange={e => handleConfigChange('displayName', e.target.value)} />
                           <p className="text-sm text-muted-foreground">Tên này sẽ được hiển thị cho người dùng cuối.</p>
                        </div>
                        <div className="space-y-2">
                           <Label htmlFor="welcomeMessage">Lời chào</Label>
-                          <Textarea name="welcomeMessage" id="welcomeMessage" defaultValue={initialConfig.welcomeMessage} />
+                          <Textarea name="welcomeMessage" id="welcomeMessage" value={config.welcomeMessage} onChange={e => handleConfigChange('welcomeMessage', e.target.value)} />
                           <p className="text-sm text-muted-foreground">Tin nhắn đầu tiên chatbot sẽ gửi.</p>
                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="ai-persona">Persona của AI</Label>
-                            <Select name="ai-persona" defaultValue={initialConfig.aiPersona}>
+                            <Select name="ai-persona" value={config.aiPersona} onValueChange={value => handleConfigChange('aiPersona', value)}>
                                 <SelectTrigger id="ai-persona">
                                     <SelectValue placeholder="Chọn một persona" />
                                 </SelectTrigger>
@@ -241,16 +234,16 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
                             <div className="space-y-2">
                                 <Label htmlFor="primaryColor">Màu chính</Label>
                                 <div className="relative">
-                                    <Input id="primaryColor" name="primaryColor" type="color" defaultValue="#2563EB" className="p-1 h-10 w-full" />
+                                    <Input id="primaryColor" name="primaryColor" type="color" value={config.primaryColor} onChange={e => handleConfigChange('primaryColor', e.target.value)} className="p-1 h-10 w-full" />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="accentColor">Màu nhấn</Label>
-                                <Input id="accentColor" name="accentColor" type="color" defaultValue="#FBBF24" className="p-1 h-10 w-full" />
+                                <Input id="accentColor" name="accentColor" type="color" value={config.accentColor} onChange={e => handleConfigChange('accentColor', e.target.value)} className="p-1 h-10 w-full" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="backgroundColor">Màu nền</Label>
-                                <Input id="backgroundColor" name="backgroundColor" type="color" defaultValue="#F3F4F6" className="p-1 h-10 w-full" />
+                                <Input id="backgroundColor" name="backgroundColor" type="color" value={config.backgroundColor} onChange={e => handleConfigChange('backgroundColor', e.target.value)} className="p-1 h-10 w-full" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -458,5 +451,3 @@ export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProp
     </div>
   );
 }
-
-    

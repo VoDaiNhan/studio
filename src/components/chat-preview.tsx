@@ -89,11 +89,15 @@ export function ChatPreview({ config }: ChatPreviewProps) {
   }, [state, isPending]);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const query = formData.get('query') as string;
 
     if (query?.trim()) {
       setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: query }]);
+      formAction(formData);
+      formRef.current?.reset();
+      inputRef.current?.focus();
     }
   };
 
@@ -111,11 +115,17 @@ export function ChatPreview({ config }: ChatPreviewProps) {
       }
     }
   };
+  
+  const chatStyle = {
+    '--chat-primary-color': config.primaryColor,
+    '--chat-accent-color': config.accentColor,
+    '--chat-background-color': config.backgroundColor,
+  } as React.CSSProperties;
 
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="bg-primary text-primary-foreground">
+    <Card className="h-full flex flex-col" style={chatStyle}>
+      <CardHeader style={{ backgroundColor: 'var(--chat-primary-color)' }} className="text-primary-foreground">
         <div className="flex items-center gap-3">
           <Avatar>
             <AvatarFallback className="bg-primary-foreground text-primary">
@@ -134,7 +144,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 bg-muted/20 overflow-hidden">
+      <CardContent className="flex-1 p-0 overflow-hidden" style={{ backgroundColor: 'var(--chat-background-color)' }}>
         <ScrollArea className="h-full" ref={scrollAreaRef}>
            <div className="p-4 flex flex-col gap-4">
             {messages.length === 0 && !isPending && !isTransitioning ? (
@@ -148,6 +158,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                             className="justify-start h-auto py-2"
                             onClick={() => handleQuickReplyClick(reply.text)}
                             disabled={isPending || isTransitioning}
+                            style={{borderColor: 'var(--chat-accent-color)'}}
                         >
                             <reply.icon className="w-4 h-4 mr-2 shrink-0" />
                             <span className="whitespace-normal text-left">{reply.text}</span>
@@ -160,10 +171,12 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                     <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                          {message.role === 'assistant' && (
                             <Avatar className="h-8 w-8 border">
-                                <AvatarFallback className="bg-primary text-primary-foreground"><Bot /></AvatarFallback>
+                                <AvatarFallback className="bg-primary text-primary-foreground" style={{ backgroundColor: 'var(--chat-primary-color)' }}><Bot /></AvatarFallback>
                             </Avatar>
                          )}
-                         <div className={`rounded-lg p-3 max-w-[80%] text-sm ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+                         <div className={`rounded-lg p-3 max-w-[80%] text-sm ${message.role === 'user' ? 'text-primary-foreground' : 'bg-background'}`}
+                           style={ message.role === 'user' ? { backgroundColor: 'var(--chat-primary-color)' } : {}}
+                         >
                             {message.role === 'user' ? (
                                 <p>{message.content}</p>
                             ) : (
@@ -192,7 +205,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
             {(isPending || isTransitioning) && (
               <div className="flex gap-3">
                   <Avatar className="h-8 w-8 border">
-                      <AvatarFallback className="bg-primary text-primary-foreground"><Bot /></AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground" style={{ backgroundColor: 'var(--chat-primary-color)' }}><Bot /></AvatarFallback>
                   </Avatar>
                   <div className="rounded-lg p-3 max-w-[80%] text-sm bg-background flex items-center">
                       <Loader2 className="animate-spin h-5 w-5" />
@@ -215,9 +228,6 @@ export function ChatPreview({ config }: ChatPreviewProps) {
             action={formAction}
             onSubmit={handleFormSubmit}
             className="relative"
-            onReset={(e) => {
-                inputRef.current?.focus();
-            }}
         >
           <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending || isTransitioning} />
           <SubmitButton />

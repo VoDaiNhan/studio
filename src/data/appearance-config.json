@@ -1,5 +1,8 @@
 {
   "displayName": "Trợ lý Luật Giao thông",
   "welcomeMessage": "Chào bạn! Tôi có thể giúp gì cho bạn về Luật Giao thông?",
-  "aiPersona": "professional"
+  "aiPersona": "expert",
+  "primaryColor": "#2563EB",
+  "accentColor": "#FBBF24",
+  "backgroundColor": "#F3F4F6"
 }

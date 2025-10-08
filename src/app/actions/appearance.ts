@@ -12,6 +12,9 @@ const AppearanceConfigSchema = z.object({
   displayName: z.string(),
   welcomeMessage: z.string(),
   aiPersona: z.enum(['expert', 'friendly', 'professional']),
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 
 export type AppearanceConfig = z.infer<typeof AppearanceConfigSchema>;
@@ -24,10 +27,13 @@ async function readData(): Promise<AppearanceConfig> {
   } catch (error) {
     // If the file doesn't exist or has an error, return a default config
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      const defaultConfig = {
+      const defaultConfig: AppearanceConfig = {
         displayName: 'Trợ lý Luật Giao thông',
         welcomeMessage: 'Chào bạn! Tôi có thể giúp gì cho bạn về Luật Giao thông?',
         aiPersona: 'expert' as const,
+        primaryColor: '#2563EB',
+        accentColor: '#FBBF24',
+        backgroundColor: '#F3F4F6',
       };
       await writeData(defaultConfig);
       return defaultConfig;
