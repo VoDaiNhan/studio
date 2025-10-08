@@ -53,41 +53,40 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     error: '',
     query: ''
   });
+  const [isTransitioning, startTransition] = useTransition();
 
   useEffect(() => {
-    // Scroll to the bottom whenever messages change
     if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo(0, scrollAreaRef.current.scrollHeight);
+        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (viewport) {
+             viewport.scrollTop = viewport.scrollHeight;
+        }
     }
   }, [messages, isPending]);
 
-
   useEffect(() => {
-    if (!state.query) return;
+    if (state.query && !isPending) {
+        const userMessageExists = messages.some(msg => msg.role === 'user' && msg.content === state.query);
 
-    const userMessageExists = messages.some(msg => msg.role === 'user' && msg.content === state.query);
-
-    if (state.error) {
-      if(userMessageExists) {
-        setMessages(prev => prev.filter(msg => msg.content !== state.query));
-      }
-    } else if (state.summary) {
-        const assistantMessageExists = messages.some(msg => msg.summary === state.summary);
-        if (userMessageExists && !assistantMessageExists) {
-             setMessages((prev) => [
-                ...prev,
-                {
-                    id: Date.now(),
-                    role: 'assistant',
-                    content: '',
-                    summary: state.summary,
-                    sourceArticles: state.sourceArticles,
-                },
-            ]);
+        if (state.error) {
+            setMessages(prev => prev.filter(msg => !(msg.role === 'user' && msg.content === state.query)));
+        } else if (state.summary && userMessageExists) {
+            const assistantMessageExists = messages.some(msg => msg.role === 'assistant' && msg.summary === state.summary);
+            if (!assistantMessageExists) {
+                 setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        role: 'assistant',
+                        content: '', // content is not needed for assistant
+                        summary: state.summary,
+                        sourceArticles: state.sourceArticles,
+                    },
+                ]);
+            }
         }
     }
-  }, [state, messages]);
-
+  }, [state, isPending]);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     const formData = new FormData(event.currentTarget);
@@ -95,7 +94,6 @@ export function ChatPreview({ config }: ChatPreviewProps) {
 
     if (query?.trim()) {
       setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: query }]);
-      // The form's `action` prop will handle calling formAction
     }
   };
 
@@ -103,9 +101,13 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     if (inputRef.current) {
       inputRef.current.value = text;
       if(formRef.current) {
-        // Create a native submit event to trigger the form action
-        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-        formRef.current.dispatchEvent(submitEvent);
+         startTransition(() => {
+            const formData = new FormData(formRef.current!);
+            formData.set('query', text);
+            setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: text }]);
+            formAction(formData);
+            formRef.current?.reset();
+        });
       }
     }
   };
@@ -132,10 +134,10 @@ export function ChatPreview({ config }: ChatPreviewProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 bg-muted/20">
+      <CardContent className="flex-1 p-0 bg-muted/20 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollAreaRef}>
            <div className="p-4 flex flex-col gap-4">
-            {messages.length === 0 && !isPending ? (
+            {messages.length === 0 && !isPending && !isTransitioning ? (
                  <Card className="p-4 bg-background">
                     <p className="font-medium mb-3">{config.welcomeMessage}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -145,7 +147,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                             variant="outline" 
                             className="justify-start h-auto py-2"
                             onClick={() => handleQuickReplyClick(reply.text)}
-                            disabled={isPending}
+                            disabled={isPending || isTransitioning}
                         >
                             <reply.icon className="w-4 h-4 mr-2 shrink-0" />
                             <span className="whitespace-normal text-left">{reply.text}</span>
@@ -187,7 +189,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                     </div>
                 ))
             )}
-            {isPending && (
+            {(isPending || isTransitioning) && (
               <div className="flex gap-3">
                   <Avatar className="h-8 w-8 border">
                       <AvatarFallback className="bg-primary text-primary-foreground"><Bot /></AvatarFallback>
@@ -197,7 +199,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                   </div>
               </div>
             )}
-            {state.error && state.query && !messages.some(m => m.content === state.query) && (
+            {state.error && (
                 <div className="flex justify-start">
                      <div className="rounded-lg p-3 max-w-[80%] text-sm bg-destructive/10 text-destructive">
                         <p>Rất tiếc, đã có lỗi xảy ra: {state.error}</p>
@@ -213,9 +215,11 @@ export function ChatPreview({ config }: ChatPreviewProps) {
             action={formAction}
             onSubmit={handleFormSubmit}
             className="relative"
-            onReset={() => inputRef.current?.focus()}
+            onReset={(e) => {
+                inputRef.current?.focus();
+            }}
         >
-          <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending} />
+          <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending || isTransitioning} />
           <SubmitButton />
         </form>
       </div>

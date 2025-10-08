@@ -19,7 +19,7 @@ export default async function Home() {
               <div className="lg:col-span-2">
                 <ChatbotConfiguration initialConfig={config} />
               </div>
-              <div className="sticky top-6">
+              <div className="sticky top-6 h-[calc(100vh-48px)]">
                 <ChatPreview config={config} />
               </div>
             </main>
