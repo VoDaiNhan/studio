@@ -3,8 +3,11 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { AppHeader } from '@/components/app-header';
 import { ChatbotConfiguration } from '@/components/chatbot-configuration';
 import { ChatPreview } from '@/components/chat-preview';
+import { getAppearanceConfig } from '@/app/actions/appearance';
 
-export default function Home() {
+export default async function Home() {
+  const config = await getAppearanceConfig();
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
@@ -14,10 +17,10 @@ export default function Home() {
           <SidebarInset>
             <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <ChatbotConfiguration />
+                <ChatbotConfiguration initialConfig={config} />
               </div>
               <div>
-                <ChatPreview />
+                <ChatPreview config={config} />
               </div>
             </main>
           </SidebarInset>

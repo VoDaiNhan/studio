@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import {
   Tabs,
@@ -16,8 +17,8 @@ import {
 import { Button } from './ui/button';
 import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -25,9 +26,18 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { KnowledgeSource } from '@/lib/knowledge';
 import { getKnowledgeSources, createKnowledgeSource, updateKnowledgeSource, deleteKnowledgeSource } from '@/app/actions/knowledge';
+import { updateAppearanceConfig, type AppearanceConfig } from '@/app/actions/appearance';
 import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+
+const AppearanceConfigSchema = z.object({
+  displayName: z.string(),
+  welcomeMessage: z.string(),
+  aiPersona: z.enum(['expert', 'friendly', 'professional']),
+});
 
 type DialogState = {
     open: boolean;
@@ -35,12 +45,18 @@ type DialogState = {
     source: KnowledgeSource | null;
 };
 
-export function ChatbotConfiguration() {
+type ChatbotConfigurationProps = {
+    initialConfig: AppearanceConfig;
+};
+
+export function ChatbotConfiguration({ initialConfig }: ChatbotConfigurationProps) {
     const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dialogState, setDialogState] = useState<DialogState>({ open: false, mode: 'add', source: null });
     const [uploadType, setUploadType] = useState<'manual' | 'url'>('url');
     const [effectiveDate, setEffectiveDate] = useState<Date | undefined>();
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
         const fetchSources = async () => {
@@ -72,7 +88,7 @@ export function ChatbotConfiguration() {
         setEffectiveDate(undefined);
     };
 
-    const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveKnowledge = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const title = formData.get('title') as string;
@@ -110,6 +126,44 @@ export function ChatbotConfiguration() {
             setKnowledgeSources(sources);
         }
     };
+    
+    const handleSaveAppearance = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        
+        const newConfig = {
+            displayName: formData.get('displayName') as string,
+            welcomeMessage: formData.get('welcomeMessage') as string,
+            aiPersona: formData.get('ai-persona') as 'expert' | 'friendly' | 'professional',
+        };
+
+        const validatedData = AppearanceConfigSchema.safeParse(newConfig);
+
+        if (!validatedData.success) {
+             toast({
+                variant: "destructive",
+                title: "Dữ liệu không hợp lệ!",
+                description: "Vui lòng kiểm tra lại các trường đã nhập.",
+            });
+            return;
+        }
+
+        startTransition(async () => {
+            const result = await updateAppearanceConfig(validatedData.data);
+            if (result.success) {
+                toast({
+                    title: "Thành công!",
+                    description: "Đã lưu cài đặt giao diện.",
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Ôi, có lỗi!",
+                    description: result.error || "Không thể lưu cài đặt giao diện.",
+                });
+            }
+        });
+    };
 
   return (
     <div>
@@ -118,7 +172,7 @@ export function ChatbotConfiguration() {
         Tùy chỉnh giao diện, hành vi và kiến thức cho chatbot của bạn.
       </p>
 
-      <Tabs defaultValue="knowledge">
+      <Tabs defaultValue="appearance">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="appearance">
             <Paintbrush className="w-4 h-4 mr-2" /> Giao diện
@@ -134,64 +188,72 @@ export function ChatbotConfiguration() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Giao diện</CardTitle>
-              <CardDescription>
-                Tùy chỉnh giao diện và cảm nhận của chatbot.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              <div className="space-y-4">
-                  <h3 className="font-medium text-lg">Chung</h3>
-                   <div className="space-y-2">
-                      <Label htmlFor="displayName">Tên hiển thị</Label>
-                      <Input id="displayName" defaultValue="Trợ lý Luật Giao thông" />
-                      <p className="text-sm text-muted-foreground">Tên này sẽ được hiển thị cho người dùng cuối.</p>
-                   </div>
-                   <div className="space-y-2">
-                      <Label htmlFor="welcomeMessage">Lời chào</Label>
-                      <Textarea id="welcomeMessage" defaultValue="Chào bạn! Tôi có thể giúp gì cho bạn về Luật Giao thông đường bộ?" />
-                      <p className="text-sm text-muted-foreground">Tin nhắn đầu tiên chatbot sẽ gửi.</p>
-                   </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ai-persona">Persona của AI</Label>
-                        <Select defaultValue="expert">
-                            <SelectTrigger id="ai-persona">
-                                <SelectValue placeholder="Chọn một persona" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="expert">Chuyên gia</SelectItem>
-                                <SelectItem value="friendly">Thân thiện</SelectItem>
-                                <SelectItem value="professional">Chuyên nghiệp</SelectItem>
-                            </SelectContent>
-                        </Select>
-                         <p className="text-sm text-muted-foreground">Điều này sẽ thay đổi giọng văn và phong cách trả lời của AI.</p>
-                    </div>
-              </div>
-              <Separator />
-               <div className="space-y-4">
-                  <h3 className="font-medium text-lg">Thương hiệu & Màu sắc</h3>
-                  <div className="flex items-center gap-4">
-                    <div className='space-y-2'>
-                        <Label>Logo</Label>
-                        <Avatar className="h-20 w-20">
-                            <AvatarImage src="https://picsum.photos/seed/logo/200" />
-                            <AvatarFallback><Scale /></AvatarFallback>
-                        </Avatar>
-                    </div>
-                    <div className='space-y-2'>
-                        <Label>Biểu tượng Chatbot</Label>
-                        <Avatar className="h-20 w-20">
-                            <AvatarImage src="https://picsum.photos/seed/bot/200" />
-                            <AvatarFallback><Bot /></AvatarFallback>
-                        </Avatar>
-                    </div>
+            <form onSubmit={handleSaveAppearance}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Giao diện</CardTitle>
+                  <CardDescription>
+                    Tùy chỉnh giao diện và cảm nhận của chatbot.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <div className="space-y-4">
+                      <h3 className="font-medium text-lg">Chung</h3>
+                       <div className="space-y-2">
+                          <Label htmlFor="displayName">Tên hiển thị</Label>
+                          <Input name="displayName" id="displayName" defaultValue={initialConfig.displayName} />
+                          <p className="text-sm text-muted-foreground">Tên này sẽ được hiển thị cho người dùng cuối.</p>
+                       </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="welcomeMessage">Lời chào</Label>
+                          <Textarea name="welcomeMessage" id="welcomeMessage" defaultValue={initialConfig.welcomeMessage} />
+                          <p className="text-sm text-muted-foreground">Tin nhắn đầu tiên chatbot sẽ gửi.</p>
+                       </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="ai-persona">Persona của AI</Label>
+                            <Select name="ai-persona" defaultValue={initialConfig.aiPersona}>
+                                <SelectTrigger id="ai-persona">
+                                    <SelectValue placeholder="Chọn một persona" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="expert">Chuyên gia</SelectItem>
+                                    <SelectItem value="friendly">Thân thiện</SelectItem>
+                                    <SelectItem value="professional">Chuyên nghiệp</SelectItem>
+                                </SelectContent>
+                            </Select>
+                             <p className="text-sm text-muted-foreground">Điều này sẽ thay đổi giọng văn và phong cách trả lời của AI.</p>
+                        </div>
                   </div>
-                  <Button variant="outline">Tải lên</Button>
-               </div>
-            </CardContent>
-          </Card>
+                  <Separator />
+                   <div className="space-y-4">
+                      <h3 className="font-medium text-lg">Thương hiệu & Màu sắc</h3>
+                      <div className="flex items-center gap-4">
+                        <div className='space-y-2'>
+                            <Label>Logo</Label>
+                            <Avatar className="h-20 w-20">
+                                <AvatarImage src="https://picsum.photos/seed/logo/200" />
+                                <AvatarFallback><Scale /></AvatarFallback>
+                            </Avatar>
+                        </div>
+                        <div className='space-y-2'>
+                            <Label>Biểu tượng Chatbot</Label>
+                            <Avatar className="h-20 w-20">
+                                <AvatarImage src="https://picsum.photos/seed/bot/200" />
+                                <AvatarFallback><Bot /></AvatarFallback>
+                            </Avatar>
+                        </div>
+                      </div>
+                      <Button variant="outline" type="button">Tải lên</Button>
+                   </div>
+                </CardContent>
+                 <CardFooter className="border-t px-6 py-4">
+                    <Button type="submit" disabled={isPending}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Lưu thay đổi
+                    </Button>
+                </CardFooter>
+              </Card>
+            </form>
         </TabsContent>
         <TabsContent value="knowledge" className="space-y-6">
           <Card>
@@ -282,7 +344,7 @@ export function ChatbotConfiguration() {
           <DialogHeader>
             <DialogTitle>{dialogState.mode === 'add' ? 'Thêm nguồn kiến thức mới' : 'Chỉnh sửa nguồn kiến thức'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSave}>
+          <form onSubmit={handleSaveKnowledge}>
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <Button type="button" variant={uploadType === 'url' ? 'default' : 'outline'} onClick={() => setUploadType('url')}>
@@ -323,6 +385,7 @@ export function ChatbotConfiguration() {
                      <Popover>
                       <PopoverTrigger asChild>
                         <Button
+                          type="button"
                           variant={"outline"}
                           className={cn(
                             "w-full justify-start text-left font-normal",

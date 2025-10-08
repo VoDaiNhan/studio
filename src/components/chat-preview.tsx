@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useActionState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { getLawSummary, type LawSummaryState } from '@/app/actions';
+import type { AppearanceConfig } from '@/app/actions/appearance';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -20,11 +21,16 @@ const quickReplies = [
 ];
 
 interface Message {
+  id: number;
   role: 'user' | 'assistant';
   content: string;
   summary?: string;
   sourceArticles?: string;
 }
+
+type ChatPreviewProps = {
+    config: AppearanceConfig;
+};
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -35,14 +41,13 @@ function SubmitButton() {
   );
 }
 
-export function ChatPreview() {
+export function ChatPreview({ config }: ChatPreviewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [isPending, startTransition] = useTransition();
-
-  const [state, formAction] = useActionState<LawSummaryState, FormData>(getLawSummary, {
+  
+  const [state, formAction, isPending] = useActionState<LawSummaryState, FormData>(getLawSummary, {
     summary: '',
     sourceArticles: '',
     error: '',
@@ -50,48 +55,47 @@ export function ChatPreview() {
   });
 
   useEffect(() => {
-    if (state.error) {
-       setMessages(prev => {
-        if (prev.length > 0 && prev[prev.length - 1].role === 'user') {
-          return prev.slice(0, -1);
-        }
-        return prev;
-      });
-    }
-    if (state.summary && state.query) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage?.role === 'user') {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: '',
-            summary: state.summary,
-            sourceArticles: state.sourceArticles,
-          },
-        ]);
-      }
-    }
-  }, [state]);
-
-  useEffect(() => {
+    // Scroll to the bottom whenever messages change
     if (scrollAreaRef.current) {
         scrollAreaRef.current.scrollTo(0, scrollAreaRef.current.scrollHeight);
     }
   }, [messages, isPending]);
 
 
+  useEffect(() => {
+    if (!state.query) return;
+
+    const userMessageExists = messages.some(msg => msg.role === 'user' && msg.content === state.query);
+
+    if (state.error) {
+      if(userMessageExists) {
+        setMessages(prev => prev.filter(msg => msg.content !== state.query));
+      }
+    } else if (state.summary) {
+        const assistantMessageExists = messages.some(msg => msg.summary === state.summary);
+        if (userMessageExists && !assistantMessageExists) {
+             setMessages((prev) => [
+                ...prev,
+                {
+                    id: Date.now(),
+                    role: 'assistant',
+                    content: '',
+                    summary: state.summary,
+                    sourceArticles: state.sourceArticles,
+                },
+            ]);
+        }
+    }
+  }, [state, messages]);
+
+
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const query = formData.get('query') as string;
 
     if (query?.trim()) {
-      setMessages((prev) => [...prev, { role: 'user', content: query }]);
-      startTransition(() => {
-        formAction(formData);
-      });
-      formRef.current?.reset();
+      setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: query }]);
+      // The form's `action` prop will handle calling formAction
     }
   };
 
@@ -99,13 +103,9 @@ export function ChatPreview() {
     if (inputRef.current) {
       inputRef.current.value = text;
       if(formRef.current) {
-        const formData = new FormData(formRef.current);
-        formData.set('query', text);
-        setMessages((prev) => [...prev, { role: 'user', content: text }]);
-        startTransition(() => {
-            formAction(formData);
-        });
-        formRef.current?.reset();
+        // Create a native submit event to trigger the form action
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+        formRef.current.dispatchEvent(submitEvent);
       }
     }
   };
@@ -121,7 +121,7 @@ export function ChatPreview() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-bold text-lg">Trợ lý Luật Giao thông</p>
+            <p className="font-bold text-lg">{config.displayName}</p>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -137,7 +137,7 @@ export function ChatPreview() {
            <div className="p-4 flex flex-col gap-4">
             {messages.length === 0 && !isPending ? (
                  <Card className="p-4 bg-background">
-                    <p className="font-medium mb-3">Tôi có thể giúp gì cho bạn về Luật Giao thông?</p>
+                    <p className="font-medium mb-3">{config.welcomeMessage}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                         {quickReplies.map((reply, index) => (
                         <Button 
@@ -154,8 +154,8 @@ export function ChatPreview() {
                     </div>
                 </Card>
             ) : (
-                messages.map((message, index) => (
-                    <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                messages.map((message) => (
+                    <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                          {message.role === 'assistant' && (
                             <Avatar className="h-8 w-8 border">
                                 <AvatarFallback className="bg-primary text-primary-foreground"><Bot /></AvatarFallback>
@@ -197,10 +197,10 @@ export function ChatPreview() {
                   </div>
               </div>
             )}
-            {state.error && state.query && (
+            {state.error && state.query && !messages.some(m => m.content === state.query) && (
                 <div className="flex justify-start">
                      <div className="rounded-lg p-3 max-w-[80%] text-sm bg-destructive/10 text-destructive">
-                        <p>{state.error}</p>
+                        <p>Rất tiếc, đã có lỗi xảy ra: {state.error}</p>
                      </div>
                 </div>
             )}
@@ -208,7 +208,13 @@ export function ChatPreview() {
         </ScrollArea>
       </CardContent>
       <div className="p-4 border-t">
-        <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
+        <form 
+            ref={formRef} 
+            action={formAction}
+            onSubmit={handleFormSubmit}
+            className="relative"
+            onReset={() => inputRef.current?.focus()}
+        >
           <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending} />
           <SubmitButton />
         </form>
