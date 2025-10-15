@@ -68,6 +68,16 @@ type Conversation = {
     isVerified: boolean;
 };
 
+// Helper function to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
 export function ChatbotConfiguration({ config, setConfig }: ChatbotConfigurationProps) {
     const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -139,9 +149,7 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
 
         let dataContent = content;
         if (uploadType === 'file' && file && file.size > 0) {
-            // In a real app, you'd process the file here (e.g., extract text from PDF)
-            // For this simulation, we'll just use a placeholder with the file name.
-            dataContent = `Nội dung từ tệp: ${file.name}`;
+            dataContent = await fileToBase64(file);
         }
 
         const data: any = {

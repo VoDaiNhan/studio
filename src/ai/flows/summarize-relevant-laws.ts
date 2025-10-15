@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const SummarizeRelevantLawsInputSchema = z.object({
   query: z.string().describe('The user query related to traffic laws in Vietnamese.'),
-  relevantLaws: z.string().describe('The relevant articles and clauses from the traffic law database in Vietnamese.'),
+  relevantLaws: z.string().describe('The relevant articles and clauses from the traffic law database in Vietnamese. This may include base64 encoded content.'),
 });
 export type SummarizeRelevantLawsInput = z.infer<typeof SummarizeRelevantLawsInputSchema>;
 
@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'summarizeRelevantLawsPrompt',
   input: {schema: SummarizeRelevantLawsInputSchema},
   output: {schema: SummarizeRelevantLawsOutputSchema},
-  prompt: `Bạn là một chuyên gia pháp lý chuyên về luật giao thông. Nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Luôn trả lời bằng tiếng Việt.\n\nCâu hỏi của người dùng: {{{query}}}\nLuật liên quan: {{{relevantLaws}}}\n\nTóm tắt: \
+  prompt: `Bạn là một chuyên gia pháp lý chuyên về luật giao thông. Nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp. Luôn trả lời bằng tiếng Việt.\n\nCâu hỏi của người dùng: {{{query}}}\nLuật liên quan: {{{relevantLaws}}}\n\nTóm tắt: \
 Nguồn bài viết: `,
 });
 

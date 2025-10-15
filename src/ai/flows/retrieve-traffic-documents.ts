@@ -52,7 +52,6 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     // 2. Perform a vector similarity search to find the most relevant chunks.
     // 3. Return the content of those relevant chunks.
     
-    // For now, we'll return the content of all active sources.
     const documents = activeSources.map(source => {
         let docString = `Document Title: ${source.title}\n`;
         if (source.url) {
