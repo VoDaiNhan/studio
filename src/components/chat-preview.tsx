@@ -93,9 +93,11 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     const formData = new FormData(event.currentTarget);
     const query = formData.get('query') as string;
 
-    if (query?.trim()) {
+    if (query?.trim() && !isPending) {
       setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: query }]);
-      formAction(formData);
+      startTransition(() => {
+        formAction(formData);
+      });
       formRef.current?.reset();
       inputRef.current?.focus();
     }
@@ -104,11 +106,11 @@ export function ChatPreview({ config }: ChatPreviewProps) {
   const handleQuickReplyClick = (text: string) => {
     if (inputRef.current) {
       inputRef.current.value = text;
-      if(formRef.current) {
+      if(formRef.current && !isPending) {
+         setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: text }]);
          startTransition(() => {
             const formData = new FormData(formRef.current!);
             formData.set('query', text);
-            setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: text }]);
             formAction(formData);
             formRef.current?.reset();
         });
@@ -202,7 +204,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                     </div>
                 ))
             )}
-            {(isPending || isTransitioning) && (
+            {isPending && (
               <div className="flex gap-3">
                   <Avatar className="h-8 w-8 border">
                       <AvatarFallback className="bg-primary text-primary-foreground" style={{ backgroundColor: 'var(--chat-primary-color)' }}><Bot /></AvatarFallback>
@@ -225,12 +227,13 @@ export function ChatPreview({ config }: ChatPreviewProps) {
       <div className="p-4 border-t">
         <form 
             ref={formRef} 
-            action={formAction}
             onSubmit={handleFormSubmit}
             className="relative"
         >
-          <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending || isTransitioning} />
-          <SubmitButton />
+          <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending} />
+          <Button size="icon" type="submit" disabled={isPending} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+            {isPending ? <Loader2 className="animate-spin" /> : <Send className="h-4 w-4" />}
+          </Button>
         </form>
       </div>
     </Card>
