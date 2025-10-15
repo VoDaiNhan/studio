@@ -160,26 +160,39 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
 
         if (uploadType === 'url') {
             data.url = url;
+            data.content = undefined;
         } else {
             data.content = dataContent;
+            data.url = undefined;
         }
 
-
-        let result;
-        if (dialogState.mode === 'add') {
-            result = await createKnowledgeSource(data as any);
-        } else if (dialogState.source) {
-            result = await updateKnowledgeSource({
-                id: dialogState.source.id,
-                ...data
-            } as any);
-        }
-
-        if (result) {
-            const sources = await getKnowledgeSources();
-            setKnowledgeSources(sources);
-        }
-        handleCloseDialog();
+        startTransition(async () => {
+            let result;
+            if (dialogState.mode === 'add') {
+                result = await createKnowledgeSource(data);
+            } else if (dialogState.source) {
+                result = await updateKnowledgeSource({
+                    id: dialogState.source.id,
+                    ...data
+                });
+            }
+    
+            if (result) {
+                const sources = await getKnowledgeSources();
+                setKnowledgeSources(sources);
+                toast({
+                    title: `Đã ${dialogState.mode === 'add' ? 'thêm' : 'cập nhật'} nguồn kiến thức!`,
+                    description: `Nguồn "${result.title}" đang được xử lý.`,
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Ôi, có lỗi!",
+                    description: `Không thể ${dialogState.mode === 'add' ? 'thêm' : 'cập nhật'} nguồn kiến thức.`,
+                });
+            }
+            handleCloseDialog();
+        });
     };
     
     const handleDelete = async (id: string) => {
@@ -626,7 +639,10 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>Hủy</Button>
-                <Button type="submit">Lưu nguồn</Button>
+                <Button type="submit" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Lưu nguồn
+                </Button>
               </DialogFooter>
           </form>
         </DialogContent>
