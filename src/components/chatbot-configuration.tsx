@@ -137,22 +137,25 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         const content = formData.get('content') as string;
         const file = formData.get('file') as File;
 
-        // For file uploads, we'll need to handle them differently, maybe read content.
-        // For now, we'll just pass the name. A real implementation would upload the file or extract text.
         let dataContent = content;
         if (uploadType === 'file' && file && file.size > 0) {
             // In a real app, you'd process the file here (e.g., extract text from PDF)
-            // For this simulation, we'll just use the file name as content.
+            // For this simulation, we'll just use a placeholder with the file name.
             dataContent = `Nội dung từ tệp: ${file.name}`;
         }
 
-        const data = {
-            title: title || (uploadType === 'file' && file.name) || '',
-            url: uploadType === 'url' ? url : undefined,
-            content: uploadType === 'manual' ? content : dataContent,
+        const data: any = {
+            title: title || (uploadType === 'file' && file.name ? file.name.replace(/\.(pdf|txt|doc|docx)$/i, '') : '') || (uploadType === 'url' ? 'Untitled URL' : 'Untitled'),
             type: uploadType,
             effectiveDate: effectiveDate?.toISOString(),
+        };
+
+        if (uploadType === 'url') {
+            data.url = url;
+        } else {
+            data.content = dataContent;
         }
+
 
         let result;
         if (dialogState.mode === 'add') {

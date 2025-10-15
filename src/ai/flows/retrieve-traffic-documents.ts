@@ -48,23 +48,22 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     
     // This is a simplified RAG implementation.
     // In a real-world scenario, you would:
-    // 1. Chunk the content of the documents (from URLs or text).
-    // 2. Embed the user's query and the document chunks.
-    // 3. Perform a vector similarity search to find the most relevant chunks.
-    // 4. Return the content of those relevant chunks.
+    // 1. Embed the user's query and the document chunks.
+    // 2. Perform a vector similarity search to find the most relevant chunks.
+    // 3. Return the content of those relevant chunks.
     
-    // For now, we'll just return the titles and URLs of all active sources as context.
-    // This will at least give the summarization AI some context to work with.
+    // For now, we'll return the content of all active sources.
     const documents = activeSources.map(source => {
-        let content = `Document Title: ${source.title}\n`;
+        let docString = `Document Title: ${source.title}\n`;
         if (source.url) {
-            content += `Source URL: ${source.url}\n`;
+            docString += `Source URL: ${source.url}\n`;
         }
+        // In a real app, the content of a URL or file would be fetched and processed here.
+        // For this example, we directly use the 'content' field if available.
         if (source.content) {
-            // Returning the full content can be too large. We'll truncate for this example.
-            content += `Content: ${source.content.substring(0, 500)}...`;
+            docString += `Content: ${source.content}`;
         }
-        return content;
+        return docString;
     });
 
     if (documents.length === 0) {
