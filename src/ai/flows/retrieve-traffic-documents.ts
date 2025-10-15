@@ -53,20 +53,19 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     // 3. Return the content of those relevant chunks.
     
     const documents = activeSources.map(source => {
+        if (!source.content) return null; // Skip sources without content
         let docString = `Document Title: ${source.title}\n`;
         if (source.url) {
             docString += `Source URL: ${source.url}\n`;
         }
-        // In a real app, the content of a URL or file would be fetched and processed here.
-        // For this example, we directly use the 'content' field if available.
-        if (source.content) {
-            docString += `Content: ${source.content}`;
-        }
+        docString += `Content: ${source.content}`;
         return docString;
-    });
+    }).filter((doc): doc is string => doc !== null); // Filter out null entries
 
+    // If the query is too short or generic, or if no relevant content is found,
+    // we might end up with an empty documents array.
     if (documents.length === 0) {
-        return { documents: ["There are no active knowledge sources available to answer the query."] };
+      return { documents: [] };
     }
 
     return { documents };
