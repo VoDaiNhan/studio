@@ -31,9 +31,10 @@ const CreateKnowledgeSourceSchema = z.object({
   title: z.string().optional(),
   url: z.string().url().optional(),
   content: z.string().optional(),
+  type: z.enum(['url', 'manual', 'file']),
   effectiveDate: z.string().optional(),
 }).refine(data => data.url || data.content, {
-  message: "Either URL or content must be provided.",
+  message: "Either URL, file content, or manual content must be provided.",
 });
 
 
@@ -43,9 +44,10 @@ const UpdateKnowledgeSourceSchema = z.object({
   title: z.string().optional(),
   url: z.string().url().optional(),
   content: z.string().optional(),
+  type: z.enum(['url', 'manual', 'file']),
   effectiveDate: z.string().optional(),
 }).refine(data => data.url || data.content, {
-    message: "Either URL or content must be provided.",
+    message: "Either URL, file content, or manual content must be provided.",
 });
 
 
@@ -60,7 +62,7 @@ export async function createKnowledgeSource(input: z.infer<typeof CreateKnowledg
   
   let title = input.title;
   // If URL is provided and title is not, try to generate a title
-  if (input.url && !title) {
+  if (input.type === 'url' && input.url && !title) {
     try {
         const urlPath = new URL(input.url).pathname;
         const fileName = urlPath.split('/').pop() || 'Untitled Document';
@@ -76,7 +78,7 @@ export async function createKnowledgeSource(input: z.infer<typeof CreateKnowledg
   const newSource: KnowledgeSource = {
     id: Date.now().toString(),
     title,
-    type: input.url ? 'url' : 'manual',
+    type: input.type,
     url: input.url,
     content: input.content,
     effectiveDate: input.effectiveDate || new Date().toISOString(),
@@ -114,7 +116,7 @@ export async function updateKnowledgeSource(input: z.infer<typeof UpdateKnowledg
   const updatedSource: KnowledgeSource = {
     ...originalSource,
     title: input.title || originalSource.title,
-    type: input.url ? 'url' : 'manual',
+    type: input.type,
     url: input.url,
     content: input.content,
     effectiveDate: input.effectiveDate || originalSource.effectiveDate,

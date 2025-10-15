@@ -1,6 +1,6 @@
 export interface KnowledgeSource {
   id: string;
-  type: 'url' | 'manual';
+  type: 'url' | 'manual' | 'file';
   title: string;
   url?: string;
   content?: string;

@@ -16,7 +16,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from './ui/button';
-import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import { BrainCircuit, History, Paintbrush, PlusCircle, Trash2, Edit, FileText, Link as LinkIcon, Upload, Loader2, Calendar as CalendarIcon, User, Bot, Scale, Image as ImageIcon, CheckCircle2, FileUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -72,12 +72,13 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dialogState, setDialogState] = useState<DialogState>({ open: false, mode: 'add', source: null });
-    const [uploadType, setUploadType] = useState<'manual' | 'url'>('url');
+    const [uploadType, setUploadType] = useState<'url' | 'manual' | 'file'>('url');
     const [effectiveDate, setEffectiveDate] = useState<Date | undefined>();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [logoFileName, setLogoFileName] = useState('Chưa có tệp nào được chọn');
     const [chatbotIconFileName, setChatbotIconFileName] = useState('Chưa có tệp nào được chọn');
+    const [knowledgeFileName, setKnowledgeFileName] = useState('Chưa có tệp nào được chọn');
     const [date, setDate] = React.useState<DateRange | undefined>({
       from: subDays(new Date(), 20),
       to: new Date(),
@@ -115,15 +116,12 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         setDialogState({ open: true, mode, source });
         if (source) {
             setEffectiveDate(new Date(source.effectiveDate));
-            if (source.content) {
-                setUploadType('manual');
-            } else {
-                setUploadType('url');
-            }
+            setUploadType(source.type);
         } else {
             setEffectiveDate(new Date());
             setUploadType('url');
         }
+        setKnowledgeFileName('Chưa có tệp nào được chọn');
     };
 
     const handleCloseDialog = () => {
@@ -137,22 +135,33 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         const title = formData.get('title') as string;
         const url = formData.get('url') as string;
         const content = formData.get('content') as string;
+        const file = formData.get('file') as File;
+
+        // For file uploads, we'll need to handle them differently, maybe read content.
+        // For now, we'll just pass the name. A real implementation would upload the file or extract text.
+        let dataContent = content;
+        if (uploadType === 'file' && file && file.size > 0) {
+            // In a real app, you'd process the file here (e.g., extract text from PDF)
+            // For this simulation, we'll just use the file name as content.
+            dataContent = `Nội dung từ tệp: ${file.name}`;
+        }
 
         const data = {
-            title,
+            title: title || (uploadType === 'file' && file.name) || '',
             url: uploadType === 'url' ? url : undefined,
-            content: uploadType === 'manual' ? content : undefined,
+            content: uploadType === 'manual' ? content : dataContent,
+            type: uploadType,
             effectiveDate: effectiveDate?.toISOString(),
         }
 
         let result;
         if (dialogState.mode === 'add') {
-            result = await createKnowledgeSource(data);
+            result = await createKnowledgeSource(data as any);
         } else if (dialogState.source) {
             result = await updateKnowledgeSource({
                 id: dialogState.source.id,
                 ...data
-            });
+            } as any);
         }
 
         if (result) {
@@ -348,7 +357,7 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
             </CardHeader>
             <CardContent>
                 <div className="border rounded-md">
-                    <div className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 font-medium p-3 bg-muted/50 text-sm">
+                    <div className="grid grid-cols-[minmax(0,2fr),1fr,1fr,auto] gap-4 font-medium p-3 bg-muted/50 text-sm">
                         <div>Tên file</div>
                         <div>Ngày có hiệu lực</div>
                         <div>Trạng thái</div>
@@ -362,10 +371,10 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
                          <div className="p-4 text-center text-sm text-muted-foreground">Chưa có nguồn kiến thức nào.</div>
                     ) : (
                         knowledgeSources.map((source) => (
-                            <div key={source.id} className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 items-center p-3 border-t text-sm">
+                            <div key={source.id} className="grid grid-cols-[minmax(0,2fr),1fr,1fr,auto] gap-4 items-center p-3 border-t text-sm">
                                 <div className="flex items-center gap-2 font-medium">
-                                    <FileText className="w-4 h-4 text-primary"/>
-                                    <span className="truncate">{source.title}</span>
+                                    <FileText className="w-4 h-4 text-primary flex-shrink-0"/>
+                                    <span className="whitespace-normal break-words">{source.title}</span>
                                 </div>
                                 <div>{new Date(source.effectiveDate).toLocaleDateString('vi-VN')}</div>
                                 <div>
@@ -521,19 +530,23 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
           </DialogHeader>
           <form onSubmit={handleSaveKnowledge}>
               <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-2">
                     <Button type="button" variant={uploadType === 'url' ? 'default' : 'outline'} onClick={() => setUploadType('url')}>
                         <LinkIcon className="w-4 h-4 mr-2"/>
                         Từ URL
                     </Button>
+                    <Button type="button" variant={uploadType === 'file' ? 'default' : 'outline'} onClick={() => setUploadType('file')}>
+                        <FileUp className="w-4 h-4 mr-2"/>
+                        Tải tệp
+                    </Button>
                     <Button type="button" variant={uploadType === 'manual' ? 'default' : 'outline'} onClick={() => setUploadType('manual')}>
-                        <Upload className="w-4 h-4 mr-2"/>
+                        <Edit className="w-4 h-4 mr-2"/>
                         Nhập thủ công
                     </Button>
                 </div>
 
                 {uploadType === 'manual' ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 pt-4">
                         <div>
                             <Label htmlFor="title">Tiêu đề</Label>
                             <Input name="title" id="title" placeholder="Ví dụ: Luật Giao thông đường bộ 2008" defaultValue={dialogState.source?.title || ''} required />
@@ -543,15 +556,33 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
                             <Textarea name="content" id="content" placeholder="Dán nội dung tài liệu vào đây..." className="min-h-[200px]" defaultValue={dialogState.source?.content || ''} required />
                         </div>
                     </div>
-                ) : (
-                    <div className="space-y-4">
+                ) : uploadType === 'url' ? (
+                    <div className="space-y-4 pt-4">
                         <div>
-                            <Label htmlFor="title">Tiêu đề</Label>
+                            <Label htmlFor="title">Tiêu đề (tùy chọn)</Label>
                             <Input name="title" id="title" placeholder="Tên tài liệu sẽ được tự động điền từ URL" defaultValue={dialogState.source?.title || ''} />
                         </div>
                         <div>
                             <Label htmlFor="url">URL</Label>
                             <Input name="url" id="url" placeholder="https://example.com/document.pdf" defaultValue={dialogState.source?.url || ''} required type="url" />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4 pt-4">
+                        <div>
+                            <Label htmlFor="title">Tiêu đề (tùy chọn)</Label>
+                            <Input name="title" id="title" placeholder="Tên tài liệu sẽ được tự động điền từ tên tệp" defaultValue={dialogState.source?.title || ''} />
+                        </div>
+                        <div>
+                            <Label htmlFor="file-upload">Tệp kiến thức</Label>
+                             <div className="flex items-center gap-4">
+                                <Input id="file-upload" name="file" type="file" className="hidden" onChange={(e) => handleFileChange(e, setKnowledgeFileName)} accept=".pdf,.txt,.doc,.docx" />
+                                <Label htmlFor="file-upload" className="cursor-pointer w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                    <Upload className="w-4 h-4 mr-2"/>
+                                    Chọn tệp
+                                </Label>
+                            </div>
+                            <p className="mt-2 text-sm text-muted-foreground text-center">{knowledgeFileName}</p>
                         </div>
                     </div>
                 )}
@@ -592,5 +623,3 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     </div>
   );
 }
-
-    
