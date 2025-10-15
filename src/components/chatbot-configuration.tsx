@@ -34,7 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { DateRange } from "react-day-picker";
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 
@@ -85,11 +85,12 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
     const firestore = useFirestore();
+    const { user } = useUser();
 
     const conversationsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !user) return null;
         return query(collection(firestore, 'conversations'), orderBy('timestamp', 'desc'));
-    }, [firestore]);
+    }, [firestore, user]);
 
     const { data: conversations, isLoading: isLoadingHistory } = useCollection<Conversation>(conversationsQuery);
 
