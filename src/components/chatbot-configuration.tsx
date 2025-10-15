@@ -151,20 +151,14 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         if (uploadType === 'file' && file && file.size > 0) {
             dataContent = await fileToBase64(file);
         }
-
-        const data: any = {
+        
+        const data = {
             title: title || (uploadType === 'file' && file.name ? file.name.replace(/\.(pdf|txt|doc|docx)$/i, '') : '') || (uploadType === 'url' ? 'Untitled URL' : 'Untitled'),
             type: uploadType,
             effectiveDate: effectiveDate?.toISOString(),
+            url: uploadType === 'url' ? url : undefined,
+            content: uploadType !== 'url' ? dataContent : undefined,
         };
-
-        if (uploadType === 'url') {
-            data.url = url;
-            data.content = undefined;
-        } else {
-            data.content = dataContent;
-            data.url = undefined;
-        }
 
         startTransition(async () => {
             let result;
@@ -382,7 +376,7 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
             <CardContent>
                 <div className="border rounded-md">
                     <div className="grid grid-cols-[minmax(0,2fr),1fr,1fr,auto] gap-4 font-medium p-3 bg-muted/50 text-sm">
-                        <div>Tên file</div>
+                        <div className="truncate">Tên file</div>
                         <div>Ngày có hiệu lực</div>
                         <div>Trạng thái</div>
                         <div className="text-right">Hành động</div>
@@ -398,7 +392,7 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
                             <div key={source.id} className="grid grid-cols-[minmax(0,2fr),1fr,1fr,auto] gap-4 items-center p-3 border-t text-sm">
                                 <div className="flex items-center gap-2 font-medium">
                                     <FileText className="w-4 h-4 text-primary flex-shrink-0"/>
-                                    <span className="whitespace-normal break-words">{source.title}</span>
+                                    <span className="whitespace-normal break-all">{source.title}</span>
                                 </div>
                                 <div>{new Date(source.effectiveDate).toLocaleDateString('vi-VN')}</div>
                                 <div>

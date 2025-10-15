@@ -19,7 +19,7 @@ const QuerySchema = z.object({
 });
 
 export async function getLawSummary(
-  prevState: LawSummaryİstediğiniz,
+  prevState: LawSummaryState,
   formData: FormData
 ): Promise<LawSummaryState> {
   const validatedFields = QuerySchema.safeParse({

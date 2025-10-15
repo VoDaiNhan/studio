@@ -65,18 +65,31 @@ export function ChatPreview({ config }: ChatPreviewProps) {
   }, [messages, isPending]);
 
   useEffect(() => {
-    if (state.query && !isPending) {
-        const userMessageExists = messages.some(msg => msg.role === 'user' && msg.content === state.query);
+      if (!state.query) return;
 
+      const userMessageExists = messages.some(
+        (msg) => msg.role === 'user' && msg.content === state.query
+      );
+
+      if (!userMessageExists) {
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), role: 'user', content: state.query! },
+        ]);
+        formRef.current?.reset();
+        inputRef.current?.focus();
+      }
+
+      if (state.query && !isPending) {
         if (state.error) {
             setMessages(prev => prev.filter(msg => !(msg.role === 'user' && msg.content === state.query)));
-        } else if (state.summary && userMessageExists) {
+        } else if (state.summary) {
             const assistantMessageExists = messages.some(msg => msg.role === 'assistant' && msg.summary === state.summary);
             if (!assistantMessageExists) {
                  setMessages(prev => [
                     ...prev,
                     {
-                        id: Date.now(),
+                        id: Date.now() + 1,
                         role: 'assistant',
                         content: '', // content is not needed for assistant
                         summary: state.summary,
@@ -86,35 +99,16 @@ export function ChatPreview({ config }: ChatPreviewProps) {
             }
         }
     }
-  }, [state, isPending]);
-
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const query = formData.get('query') as string;
-
-    if (query?.trim() && !isPending) {
-      setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: query }]);
-      startTransition(() => {
-        formAction(formData);
-      });
-      formRef.current?.reset();
-      inputRef.current?.focus();
-    }
-  };
+  }, [state, isPending, messages]);
 
   const handleQuickReplyClick = (text: string) => {
     if (inputRef.current) {
-      inputRef.current.value = text;
-      if(formRef.current && !isPending) {
-         setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: text }]);
-         startTransition(() => {
-            const formData = new FormData(formRef.current!);
-            formData.set('query', text);
+        inputRef.current.value = text;
+        const formData = new FormData(formRef.current!);
+        formData.set('query', text);
+        startTransition(() => {
             formAction(formData);
-            formRef.current?.reset();
         });
-      }
     }
   };
   
@@ -227,13 +221,18 @@ export function ChatPreview({ config }: ChatPreviewProps) {
       <div className="p-4 border-t">
         <form 
             ref={formRef} 
-            onSubmit={handleFormSubmit}
-            className="relative"
+            action={(formData) => {
+                const query = formData.get('query') as string;
+                if (!query?.trim() || isPending) return;
+                setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: query }]);
+                formRef.current?.reset();
+                inputRef.current?.focus();
+                formAction(formData);
+              }}
+              className="relative"
         >
           <Input ref={inputRef} name="query" placeholder="Nhập câu hỏi của bạn..." className="pr-12" disabled={isPending} />
-          <Button size="icon" type="submit" disabled={isPending} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
-            {isPending ? <Loader2 className="animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+          <SubmitButton />
         </form>
       </div>
     </Card>
