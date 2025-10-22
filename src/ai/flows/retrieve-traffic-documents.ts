@@ -51,13 +51,16 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     // 1. Embed the user's query and the document chunks.
     // 2. Perform a vector similarity search to find the most relevant chunks.
     // 3. Return the content of those relevant chunks.
-    const query = input.query.toLowerCase();
-    
+
+    // Simple keyword matching for now
+    const queryWords = input.query.toLowerCase().split(/\s+/);
+
     const documents = activeSources
       .filter(source => {
-        const titleMatch = source.title?.toLowerCase().includes(query);
-        const contentMatch = source.content?.toLowerCase().includes(query);
-        return titleMatch || contentMatch;
+        const title = source.title?.toLowerCase() || '';
+        const content = source.content?.toLowerCase() || '';
+        // Check if any of the query words appear in the title or content
+        return queryWords.some(word => title.includes(word) || content.includes(word));
       })
       .map(source => {
           let docString = `Document Title: ${source.title}\n`;
