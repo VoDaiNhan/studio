@@ -52,31 +52,29 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     // 2. Perform a vector similarity search to find the most relevant chunks.
     // 3. Return the content of those relevant chunks.
 
-    // Simple keyword matching for now
+    // Simple keyword matching in the title for now
     const queryWords = input.query.toLowerCase().split(/\s+/);
-
+    
     const documents = activeSources
-      .filter(source => {
+    .filter(source => {
         const title = source.title?.toLowerCase() || '';
-        const content = source.content?.toLowerCase() || '';
-        // Check if any of the query words appear in the title or content
-        return queryWords.some(word => title.includes(word) || content.includes(word));
-      })
-      .map(source => {
-          let docString = `Document Title: ${source.title}\n`;
-          if (source.url) {
-              docString += `Source URL: ${source.url}\n`;
-          }
-          if (source.content) {
+        // Check if any of the query words appear in the title
+        return queryWords.some(word => title.includes(word));
+    })
+    .map(source => {
+        let docString = `Document Title: ${source.title}\n`;
+        if (source.url) {
+            docString += `Source URL: ${source.url}\n`;
+        }
+        if (source.content) {
             docString += `Content: ${source.content}`;
-          }
-          return docString;
-      });
-
-    // If the query is too short or generic, or if no relevant content is found,
-    // we might end up with an empty documents array.
+        }
+        return docString;
+    });
+    
+    // If no relevant documents are found, return an empty array.
     if (documents.length === 0) {
-      return { documents: [] };
+        return { documents: [] };
     }
 
     return { documents };
