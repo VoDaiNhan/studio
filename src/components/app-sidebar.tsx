@@ -6,7 +6,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { BotMessageSquare, Cog, Database, LifeBuoy, Scale, UserCircle, History } from 'lucide-react';
+import { BotMessageSquare, Cog, Database, LifeBuoy, Scale, UserCircle, History, LayoutDashboard, BarChart3, Star } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function AppSidebar() {
@@ -23,39 +23,39 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
+            <SidebarMenuButton href="#">
+              <LayoutDashboard className="w-5 h-5" />
+              Tổng quan
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton href="#" isActive>
               <Cog className="w-5 h-5" />
-              Cấu hình
+              Cấu hình Chatbot
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <Database className="w-5 h-5" />
-              Nguồn kiến thức
+              Quản lý Kiến thức
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <History className="w-5 h-5" />
-              Lịch sử
+              Lịch sử & Phản hồi
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
+           <SidebarMenuItem>
             <SidebarMenuButton href="#">
-              <BotMessageSquare className="w-5 h-5" />
-              Sân chơi
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton href="#">
-              <LifeBuoy className="w-5 h-5" />
-              Hướng dẫn
+              <BarChart3 className="w-5 h-5" />
+              Phân tích & Thống kê
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <UserCircle className="w-5 h-5" />
-              Tài khoản
+              Tài khoản & Cài đặt
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
