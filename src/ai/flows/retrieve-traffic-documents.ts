@@ -51,16 +51,24 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     // 1. Embed the user's query and the document chunks.
     // 2. Perform a vector similarity search to find the most relevant chunks.
     // 3. Return the content of those relevant chunks.
+    const query = input.query.toLowerCase();
     
-    const documents = activeSources.map(source => {
-        if (!source.content) return null; // Skip sources without content
-        let docString = `Document Title: ${source.title}\n`;
-        if (source.url) {
-            docString += `Source URL: ${source.url}\n`;
-        }
-        docString += `Content: ${source.content}`;
-        return docString;
-    }).filter((doc): doc is string => doc !== null); // Filter out null entries
+    const documents = activeSources
+      .filter(source => {
+        const titleMatch = source.title?.toLowerCase().includes(query);
+        const contentMatch = source.content?.toLowerCase().includes(query);
+        return titleMatch || contentMatch;
+      })
+      .map(source => {
+          let docString = `Document Title: ${source.title}\n`;
+          if (source.url) {
+              docString += `Source URL: ${source.url}\n`;
+          }
+          if (source.content) {
+            docString += `Content: ${source.content}`;
+          }
+          return docString;
+      });
 
     // If the query is too short or generic, or if no relevant content is found,
     // we might end up with an empty documents array.

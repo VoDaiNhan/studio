@@ -33,7 +33,7 @@ const prompt = ai.definePrompt({
   output: {schema: SummarizeRelevantLawsOutputSchema},
   prompt: `Bạn là một chuyên gia pháp lý chuyên về luật giao thông. Nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp. Luôn trả lời bằng tiếng Việt.
 
-Nếu không có luật liên quan nào được cung cấp (trường relevantLaws trống), hãy trả lời rằng bạn không thể tìm thấy thông tin cho câu hỏi đó và đề nghị người dùng thử một câu hỏi khác.
+Nếu không có luật liên quan nào được cung cấp (trường relevantLaws trống hoặc chỉ chứa thông báo không có nội dung), hãy trả lời rằng bạn không thể tìm thấy thông tin cho câu hỏi đó và đề nghị người dùng thử một câu hỏi khác chi tiết hơn.
 
 Câu hỏi của người dùng: {{{query}}}
 Luật liên quan: {{{relevantLaws}}}
