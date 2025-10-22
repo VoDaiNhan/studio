@@ -25,9 +25,13 @@
         "isVerified": {
             "type": "boolean",
             "description": "Indicates if the response has been verified by an admin."
+        },
+        "userId": {
+            "type": "string",
+            "description": "The ID of the user who initiated the conversation."
         }
       },
-      "required": ["userQuery", "botSummary", "timestamp"]
+      "required": ["userQuery", "botSummary", "timestamp", "userId"]
     },
     "TrafficLaw": {
       "$schema": "http://json-schema.org/draft-07/schema#",

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Send, User, Scale, FileQuestion, MessageCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { useUser } from '@/firebase';
 
 const quickReplies = [
   { icon: AlertTriangle, text: 'Nồng độ cồn cho phép là bao nhiêu?' },
@@ -47,6 +48,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
+  const { user } = useUser();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -61,13 +63,17 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     const query = formData.get('query') as string;
     if (!query?.trim()) return;
 
+    if (user?.uid) {
+        formData.set('userId', user.uid);
+    }
+
     const userMessage: Message = { id: Date.now(), role: 'user', content: query };
     setMessages((prev) => [...prev, userMessage]);
     formRef.current?.reset();
     inputRef.current?.focus();
 
     startTransition(async () => {
-      const result = await getLawSummary({ query }, formData); // Pass previous state as first arg
+      const result = await getLawSummary({ query, userId: user?.uid }, formData); // Pass previous state as first arg
       if (result.error) {
         setMessages((prev) => [
           ...prev,

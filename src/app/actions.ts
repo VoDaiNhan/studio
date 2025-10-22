@@ -12,10 +12,12 @@ export interface LawSummaryState {
   sourceArticles?: string;
   query?: string;
   error?: string;
+  userId?: string;
 }
 
 const QuerySchema = z.object({
   query: z.string().min(1, 'Please enter a question.'),
+  userId: z.string().optional(),
 });
 
 export async function getLawSummary(
@@ -24,6 +26,7 @@ export async function getLawSummary(
 ): Promise<LawSummaryState> {
   const validatedFields = QuerySchema.safeParse({
     query: formData.get('query'),
+    userId: formData.get('userId'),
   });
 
   if (!validatedFields.success) {
@@ -32,7 +35,7 @@ export async function getLawSummary(
     };
   }
   
-  const query = validatedFields.data.query;
+  const { query, userId } = validatedFields.data;
 
   try {
     const { interpretedQuery } = await interpretTrafficQuery({ query });
@@ -43,29 +46,33 @@ export async function getLawSummary(
     });
 
     // Save to Firestore
-    try {
-        const { firestore } = initializeFirebase();
-        const conversationsCol = collection(firestore, 'conversations');
-        await addDoc(conversationsCol, {
-            userQuery: query,
-            botSummary: summary,
-            sourceArticles: sourceArticles,
-            timestamp: serverTimestamp(),
-            isVerified: false,
-        });
-    } catch (dbError) {
-        console.error("Firestore save error:", dbError);
-        // We can decide if we want to bubble this error up to the UI
-        // For now, we'll just log it and the user will still see the answer
+    if (userId) {
+        try {
+            const { firestore } = initializeFirebase();
+            const conversationsCol = collection(firestore, 'conversations');
+            await addDoc(conversationsCol, {
+                userQuery: query,
+                botSummary: summary,
+                sourceArticles: sourceArticles,
+                timestamp: serverTimestamp(),
+                isVerified: false,
+                userId: userId, // Add userId to the document
+            });
+        } catch (dbError) {
+            console.error("Firestore save error:", dbError);
+            // We can decide if we want to bubble this error up to the UI
+            // For now, we'll just log it and the user will still see the answer
+        }
     }
 
 
-    return { summary, sourceArticles, query };
+    return { summary, sourceArticles, query, userId };
   } catch (e) {
     console.error(e);
     return {
       error: 'An error occurred while processing your request. Please try again.',
       query,
+      userId,
     };
   }
 }

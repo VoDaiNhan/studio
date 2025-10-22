@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { DateRange } from "react-day-picker";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 
 const AppearanceConfigSchema = z.object({
@@ -66,6 +66,7 @@ type Conversation = {
       toDate: () => Date;
     };
     isVerified: boolean;
+    userId: string;
 };
 
 // Helper function to convert file to base64
@@ -100,7 +101,12 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
 
     const conversationsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        return query(collection(firestore, 'conversations'), orderBy('timestamp', 'desc'));
+        // Filter conversations by the current user's ID
+        return query(
+            collection(firestore, 'conversations'), 
+            where('userId', '==', user.uid),
+            orderBy('timestamp', 'desc')
+        );
     }, [firestore, user]);
 
     const { data: conversations, isLoading: isLoadingHistory } = useCollection<Conversation>(conversationsQuery);
