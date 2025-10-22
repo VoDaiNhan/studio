@@ -52,9 +52,14 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     // 2. Perform a vector similarity search to find the most relevant chunks.
     // 3. Return the content of those relevant chunks.
 
-    // Simple keyword matching in the title for now
-    const queryWords = input.query.toLowerCase().split(/\s+/);
+    // Simple keyword matching in the title for now. Filter out short/common words.
+    const queryWords = input.query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
     
+    // If there are no meaningful words to search for, return no documents.
+    if (queryWords.length === 0) {
+        return { documents: [] };
+    }
+
     const documents = activeSources
     .filter(source => {
         const title = source.title?.toLowerCase() || '';

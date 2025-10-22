@@ -18,7 +18,7 @@ const SummarizeRelevantLawsInputSchema = z.object({
 export type SummarizeRelevantLawsInput = z.infer<typeof SummarizeRelevantLawsInputSchema>;
 
 const SummarizeRelevantLawsOutputSchema = z.object({
-  summary: z.string().describe('A concise summary of the relevant legal information in Vietnamese. If no relevant laws are provided, state that you could not find an answer.'),
+  summary: z.string().describe('A concise summary of the relevant legal information in Vietnamese. If no relevant laws are provided, state that you could not find an answer and ask for a more specific question.'),
   sourceArticles: z.string().describe('The source articles and clauses used to compose the summary in Vietnamese. If no sources were used, this should be an empty string.'),
 });
 export type SummarizeRelevantLawsOutput = z.infer<typeof SummarizeRelevantLawsOutputSchema>;
@@ -31,9 +31,11 @@ const prompt = ai.definePrompt({
   name: 'summarizeRelevantLawsPrompt',
   input: {schema: SummarizeRelevantLawsInputSchema},
   output: {schema: SummarizeRelevantLawsOutputSchema},
-  prompt: `Bạn là một chuyên gia pháp lý chuyên về luật giao thông. Nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp. Luôn trả lời bằng tiếng Việt.
+  prompt: `Bạn là một trợ lý hữu ích chuyên diễn giải các câu hỏi của người dùng liên quan đến luật giao thông bằng tiếng Việt.
 
-Nếu không có luật liên quan nào được cung cấp (relevantLaws trống), hãy trả lời rằng bạn không thể tìm thấy thông tin cho câu hỏi đó và đề nghị người dùng thử một câu hỏi khác chi tiết hơn.
+Nếu không có luật liên quan nào được cung cấp (relevantLaws trống), hãy trả lời rằng bạn không thể tìm thấy thông tin cho câu hỏi đó và đề nghị người dùng cung cấp thêm thông tin hoặc đặt một câu hỏi khác rõ ràng hơn.
+
+Nếu có luật liên quan, nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp. Luôn trả lời bằng tiếng Việt.
 
 Câu hỏi của người dùng: {{{query}}}
 Luật liên quan: {{{relevantLaws}}}
@@ -47,14 +49,6 @@ const summarizeRelevantLawsFlow = ai.defineFlow(
     outputSchema: SummarizeRelevantLawsOutputSchema,
   },
   async input => {
-    // Handle the case where no relevant laws are found
-    if (!input.relevantLaws || input.relevantLaws.trim() === '') {
-        return {
-            summary: "Xin lỗi, tôi không thể tìm thấy thông tin nào liên quan đến câu hỏi của bạn. Vui lòng thử một câu hỏi khác chi tiết hơn.",
-            sourceArticles: ""
-        };
-    }
-
     const {output} = await prompt(input);
     return output!;
   }
