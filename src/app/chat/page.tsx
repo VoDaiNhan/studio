@@ -140,60 +140,62 @@ export default function ChatPage() {
       <div className="h-full flex flex-col items-center pt-16">
         <div className="w-full max-w-5xl mx-auto flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8 px-4">
             <div className="lg:col-span-3 flex flex-col h-full">
-                <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                    <div className="p-4 flex flex-col gap-4">
-                        {messages.length === 0 && !isPending ? (
-                            <div className='flex flex-col items-center justify-center text-center h-full pt-20'>
-                                <AiLogo />
-                                <h2 className="text-2xl font-semibold mt-6 text-gray-700">AI Tra cứu Luật có thể hỗ trợ gì cho bạn?</h2>
-                            </div>
-                        ) : (
-                            messages.map((message) => (
-                                <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                                    {message.role !== 'user' && (
-                                        <Avatar className="h-8 w-8 border">
-                                            <AvatarFallback className="bg-blue-500 text-white"><Bot /></AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                    <div className={`rounded-lg p-3 max-w-[80%] text-sm shadow-sm ${
-                                        message.role === 'user'
-                                            ? 'bg-blue-500 text-white'
-                                            : message.role === 'error'
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-white'
-                                    }`}>
-                                        {message.role === 'user' ? (
-                                            <p>{message.content}</p>
-                                        ) : message.role === 'error' ? (
-                                            <p>{message.content}</p>
-                                        ) : message.summary ? (
-                                            <div className="space-y-2">
-                                                <p>{message.summary}</p>
-                                                {message.sourceArticles && (
-                                                    <>
-                                                        <Separator />
-                                                        <p className="text-xs text-gray-500">
-                                                            <span className="font-semibold">Nguồn:</span> {message.sourceArticles}
-                                                        </p>
-                                                    </>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center">
-                                                <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
-                                            </div>
+                <div className="flex-1 min-h-0">
+                    <ScrollArea className="h-full" ref={scrollAreaRef}>
+                        <div className="p-4 flex flex-col gap-4">
+                            {messages.length === 0 && !isPending ? (
+                                <div className='flex flex-col items-center justify-center text-center h-full pt-20'>
+                                    <AiLogo />
+                                    <h2 className="text-2xl font-semibold mt-6 text-gray-700">AI Tra cứu Luật có thể hỗ trợ gì cho bạn?</h2>
+                                </div>
+                            ) : (
+                                messages.map((message) => (
+                                    <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                                        {message.role !== 'user' && (
+                                            <Avatar className="h-8 w-8 border">
+                                                <AvatarFallback className="bg-blue-500 text-white"><Bot /></AvatarFallback>
+                                            </Avatar>
+                                        )}
+                                        <div className={`rounded-lg p-3 max-w-[80%] text-sm shadow-sm ${
+                                            message.role === 'user'
+                                                ? 'bg-blue-500 text-white'
+                                                : message.role === 'error'
+                                                ? 'bg-red-100 text-red-800'
+                                                : 'bg-white'
+                                        }`}>
+                                            {message.role === 'user' ? (
+                                                <p>{message.content}</p>
+                                            ) : message.role === 'error' ? (
+                                                <p>{message.content}</p>
+                                            ) : message.summary ? (
+                                                <div className="space-y-2">
+                                                    <p>{message.summary}</p>
+                                                    {message.sourceArticles && (
+                                                        <>
+                                                            <Separator />
+                                                            <p className="text-xs text-gray-500">
+                                                                <span className="font-semibold">Nguồn:</span> {message.sourceArticles}
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center">
+                                                    <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {message.role === 'user' && (
+                                            <Avatar className="h-8 w-8 border">
+                                                <AvatarFallback><User /></AvatarFallback>
+                                            </Avatar>
                                         )}
                                     </div>
-                                    {message.role === 'user' && (
-                                        <Avatar className="h-8 w-8 border">
-                                            <AvatarFallback><User /></AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </ScrollArea>
+                                ))
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
                 <div className="p-4 w-full mx-auto flex-shrink-0">
                     <div className='bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200'>
                         <form 
