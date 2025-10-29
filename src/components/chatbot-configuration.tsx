@@ -104,18 +104,23 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         // Filter conversations by the current user's ID
         return query(
             collection(firestore, 'conversations'), 
-            where('userId', '==', user.uid),
-            orderBy('timestamp', 'desc')
+            where('userId', '==', user.uid)
         );
     }, [firestore, user]);
 
     const { data: conversations, isLoading: isLoadingHistory } = useCollection<Conversation>(conversationsQuery);
+    
+    const sortedConversations = React.useMemo(() => {
+        if (!conversations) return [];
+        return [...conversations].sort((a, b) => b.timestamp.toDate().getTime() - a.timestamp.toDate().getTime());
+    }, [conversations]);
+
 
     useEffect(() => {
-        if (conversations && conversations.length > 0 && !selectedConversationId) {
-            setSelectedConversationId(conversations[0].id);
+        if (sortedConversations && sortedConversations.length > 0 && !selectedConversationId) {
+            setSelectedConversationId(sortedConversations[0].id);
         }
-    }, [conversations, selectedConversationId]);
+    }, [sortedConversations, selectedConversationId]);
 
 
     useEffect(() => {
@@ -246,7 +251,7 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
         setConfig({ ...config, [field]: value });
     };
 
-    const selectedConversation = conversations?.find(c => c.id === selectedConversationId);
+    const selectedConversation = sortedConversations?.find(c => c.id === selectedConversationId);
 
 
   return (
@@ -482,7 +487,7 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
                         </div>
                      ) : (
                         <div className="flex flex-col gap-2">
-                            {conversations?.map((conv) => (
+                            {sortedConversations?.map((conv) => (
                                 <button
                                     key={conv.id}
                                     onClick={() => setSelectedConversationId(conv.id)}

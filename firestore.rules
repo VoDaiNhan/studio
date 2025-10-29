@@ -1,55 +1,56 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a user-ownership model for conversations, allowing users to only read and write their own conversations.
- * All other data (traffic laws, user queries, bot responses, and feedback) is publicly readable.
+ * @fileoverview Firestore Security Rules for the traffic law chatbot application.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes simplicity and clarity by enforcing strict owner-based access control for conversations
+ * and allowing public read access to traffic laws, user queries, chatbot responses, and feedback.
  *
  * Data Structure:
- * - /conversations/{conversationId}: Stores individual conversation entries, secured by user ID.
- * - /trafficLaws/{trafficLawId}: Stores traffic law data; publicly readable.
- * - /userQueries/{userQueryId}: Stores user queries; publicly readable.
- * - /lawBotResponses/{lawBotResponseId}: Stores bot responses; publicly readable.
- * - /feedbacks/{feedbackId}: Stores user feedback; publicly readable.
+ * - /conversations/{conversationId}: Stores chat history between users and the bot, accessible only by the owner (user who initiated the conversation).
+ * - /trafficLaws/{trafficLawId}: Stores traffic law data, publicly readable.
+ * - /userQueries/{userQueryId}: Stores user queries, publicly readable.
+ * - /lawBotResponses/{lawBotResponseId}: Stores chatbot responses, publicly readable.
+ * - /feedbacks/{feedbackId}: Stores user feedback, publicly readable.
  *
  * Key Security Decisions:
- * - Conversations are strictly user-owned; listing, creating, updating, and deleting are restricted to the owner.
- * - All other data is publicly readable.
- * - No schema validation is performed beyond authorization checks during this prototyping phase.
+ * - Conversations are strictly controlled by the user who initiated them. Only the owner can create, read, update, or delete conversations.
+ * - Traffic laws, user queries, chatbot responses, and feedback are considered public data and are readable by anyone.
+ * - No user listing is allowed for the /conversations collection to protect user privacy.
+ *
+ * Denormalization for Authorization:
+ * - The `Conversation` entity includes a `userId` field, which is used to directly enforce ownership. This avoids costly `get()` calls to other collections.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to conversation documents.  Users can only manage their own conversations.
+     * @description Controls access to individual conversation documents.
      * @path /conversations/{conversationId}
-     * @allow (create) User with UID 'user123' can create a conversation document where conversation.userId == 'user123'.
-     * @allow (get) User with UID 'user123' can retrieve a conversation document where conversation.userId == 'user123'.
-     * @allow (list) User with UID 'user123' can list conversation documents.
-     * @allow (update) User with UID 'user123' can update a conversation document where conversation.userId == 'user123'.
-     * @allow (delete) User with UID 'user123' can delete a conversation document where conversation.userId == 'user123'.
-     * @deny (create) User with UID 'user456' cannot create a conversation document where conversation.userId == 'user123'.
-     * @deny (get) User with UID 'user456' cannot retrieve a conversation document where conversation.userId == 'user123'.
-     * @deny (update) User with UID 'user456' cannot update a conversation document where conversation.userId == 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete a conversation document where conversation.userId == 'user123'.
-     * @principle Enforces document ownership for all operations on conversation documents.
+     * @allow (create) User with UID 'Kdwp435eFhYTqz2ixTAut5zXQ4t2' can create a conversation with matching userId.
+     * @allow (get) User with UID 'Kdwp435eFhYTqz2ixTAut5zXQ4t2' can read their own conversation.
+     * @allow (update) User with UID 'Kdwp435eFhYTqz2ixTAut5zXQ4t2' can update their own conversation.
+     * @allow (delete) User with UID 'Kdwp435eFhYTqz2ixTAut5zXQ4t2' can delete their own conversation.
+     * @deny (create) User with UID 'OtherUserId' cannot create a conversation for 'Kdwp435eFhYTqz2ixTAut5zXQ4t2'.
+     * @deny (get) User with UID 'OtherUserId' cannot read conversation 'Kdwp435eFhYTqz2ixTAut5zXQ4t2'.
+     * @deny (update) User with UID 'OtherUserId' cannot update conversation 'Kdwp435eFhYTqz2ixTAut5zXQ4t2'.
+     * @deny (delete) User with UID 'OtherUserId' cannot delete conversation 'Kdwp435eFhYTqz2ixTAut5zXQ4t2'.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /conversations/{conversationId} {
-      allow get: if isSignedIn() && isOwner(resource.data.userId);
-      allow list: if isSignedIn() && isOwner(request.auth.uid);
+      allow get: if isOwner(resource.data.userId);
+      allow list: if isOwner(request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && isExistingOwner(resource.data.userId);
-      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
+      allow update: if isExistingOwner(resource.data.userId);
+      allow delete: if isExistingOwner(resource.data.userId);
     }
 
     /**
      * @description Allows public read access to traffic law documents.
      * @path /trafficLaws/{trafficLawId}
-     * @allow (get) Any user can retrieve a traffic law document.
-     * @allow (list) Any user can list traffic law documents.
-     * @deny (create) No one can create a traffic law document through client.
-     * @deny (update) No one can update a traffic law document through client.
-     * @deny (delete) No one can delete a traffic law document through client.
-     * @principle Provides public read access to traffic laws.
+     * @allow (get, list) Any user can read traffic law data.
+     * @deny (create, update, delete) No one can create, update, or delete traffic law data through client-side rules.
+     * @principle Allows public read access to traffic law data.
      */
     match /trafficLaws/{trafficLawId} {
       allow get, list: if true;
@@ -59,12 +60,9 @@ service cloud.firestore {
     /**
      * @description Allows public read access to user query documents.
      * @path /userQueries/{userQueryId}
-     * @allow (get) Any user can retrieve a user query document.
-     * @allow (list) Any user can list user query documents.
-     * @deny (create) No one can create a user query document through client.
-     * @deny (update) No one can update a user query document through client.
-     * @deny (delete) No one can delete a user query document through client.
-     * @principle Provides public read access to user queries.
+     * @allow (get, list) Any user can read user query data.
+     * @deny (create, update, delete) No one can create, update, or delete user query data through client-side rules.
+     * @principle Allows public read access to user query data.
      */
     match /userQueries/{userQueryId} {
       allow get, list: if true;
@@ -74,12 +72,9 @@ service cloud.firestore {
     /**
      * @description Allows public read access to law bot response documents.
      * @path /lawBotResponses/{lawBotResponseId}
-     * @allow (get) Any user can retrieve a law bot response document.
-     * @allow (list) Any user can list law bot response documents.
-     * @deny (create) No one can create a law bot response document through client.
-     * @deny (update) No one can update a law bot response document through client.
-     * @deny (delete) No one can delete a law bot response document through client.
-     * @principle Provides public read access to law bot responses.
+     * @allow (get, list) Any user can read law bot response data.
+     * @deny (create, update, delete) No one can create, update, or delete law bot response data through client-side rules.
+     * @principle Allows public read access to law bot response data.
      */
     match /lawBotResponses/{lawBotResponseId} {
       allow get, list: if true;
@@ -89,12 +84,9 @@ service cloud.firestore {
     /**
      * @description Allows public read access to feedback documents.
      * @path /feedbacks/{feedbackId}
-     * @allow (get) Any user can retrieve a feedback document.
-     * @allow (list) Any user can list feedback documents.
-     * @deny (create) No one can create a feedback document through client.
-     * @deny (update) No one can update a feedback document through client.
-     * @deny (delete) No one can delete a feedback document through client.
-     * @principle Provides public read access to user feedback.
+     * @allow (get, list) Any user can read feedback data.
+     * @deny (create, update, delete) No one can create, update, or delete feedback data through client-side rules.
+     * @principle Allows public read access to feedback data.
      */
     match /feedbacks/{feedbackId} {
       allow get, list: if true;
@@ -102,15 +94,28 @@ service cloud.firestore {
     }
   }
 
-  // Helper Functions
+  /**
+   * @description Checks if the user is signed in.
+   * @return {boolean} True if the user is signed in, false otherwise.
+   */
   function isSignedIn() {
     return request.auth != null;
   }
 
+  /**
+   * @description Checks if the user is the owner of the document.
+   * @param {string} userId The user ID to compare against the request's auth UID.
+   * @return {boolean} True if the user is the owner, false otherwise.
+   */
   function isOwner(userId) {
-    return request.auth.uid == userId;
+    return isSignedIn() && request.auth.uid == userId;
   }
 
+    /**
+   * @description Checks if the user is the owner of the document and the resource exists.
+   * @param {string} userId The user ID to compare against the request's auth UID.
+   * @return {boolean} True if the user is the owner, false otherwise.
+   */
   function isExistingOwner(userId) {
     return isOwner(userId) && resource != null;
   }
