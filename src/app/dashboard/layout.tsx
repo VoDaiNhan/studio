@@ -9,18 +9,21 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, role } = useUser();
   const router = useRouter();
 
   React.useEffect(() => {
-    // If loading is finished and there's no user, redirect to login.
-    if (!isUserLoading && !user) {
-      router.push('/login');
+    // If loading is finished...
+    if (!isUserLoading) {
+      // ...and there's no user, or the user is not an admin, redirect to login.
+      if (!user || role !== 'admin') {
+        router.push('/login');
+      }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, role, router]);
 
-  // While checking for auth state, show a loader.
-  if (isUserLoading || !user) {
+  // While checking for auth state and role, or if user is not an admin, show a loader.
+  if (isUserLoading || !user || role !== 'admin') {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin" />
@@ -28,7 +31,7 @@ export default function DashboardLayout({
     );
   }
 
-  // If we have a user, render the full dashboard.
+  // If we have an admin user, render the full dashboard.
   return (
       <div className="min-h-screen w-full">
         {children}

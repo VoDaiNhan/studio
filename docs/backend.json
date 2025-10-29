@@ -179,7 +179,14 @@
     "providers": [
       "password",
       "anonymous"
-    ]
+    ],
+    "customClaims": {
+      "role": {
+        "type": "string",
+        "description": "User role for access control.",
+        "enum": ["admin", "user"]
+      }
+    }
   },
   "firestore": {
     "structure": [

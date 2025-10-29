@@ -11,33 +11,33 @@ import React, {
 } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, IdTokenResult } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
-interface FirebaseProviderProps {
-  children: ReactNode;
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
+// Custom claim structure
+interface AppClaims {
+  role?: 'admin' | 'user';
 }
 
-// Internal state for user authentication
+// Internal state for user authentication, now including claims
 interface UserAuthState {
   user: User | null;
+  claims: AppClaims | null;
   isUserLoading: boolean;
   userError: Error | null;
 }
 
 // Combined state for the Firebase context
 export interface FirebaseContextState {
-  areServicesAvailable: boolean; // True if core services (app, firestore, auth instance) are provided
+  areServicesAvailable: boolean;
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
-  auth: Auth | null; // The Auth service instance
+  auth: Auth | null;
   // User authentication state
   user: User | null;
-  isUserLoading: boolean; // True during initial auth check
-  userError: Error | null; // Error from auth listener
+  claims: AppClaims | null; // User's custom claims
+  isUserLoading: boolean;
+  userError: Error | null;
 }
 
 // Return type for useFirebase()
@@ -46,16 +46,17 @@ export interface FirebaseServicesAndUser {
   firestore: Firestore;
   auth: Auth;
   user: User | null;
+  claims: AppClaims | null;
   isUserLoading: boolean;
   userError: Error | null;
 }
 
-// Return type for useUser() - specific to user auth state
+// Return type for useUser() - now includes role
 export interface UserHookResult {
-  // Renamed from UserAuthHookResult for consistency if desired, or keep as UserAuthHookResult
   user: User | null;
-  isUserLoading: boolean; // True during initial auth check
-  userError: Error | null; // Error from auth listener
+  isUserLoading: boolean;
+  userError: Error | null;
+  role: 'admin' | 'user' | null; // Expose the role directly
 }
 
 // React Context
@@ -74,28 +75,55 @@ const AuthManager = ({
     if (!auth) {
       setUserAuthState({
         user: null,
+        claims: null,
         isUserLoading: false,
         userError: new Error('Auth service not provided.'),
       });
       return;
     }
-    setUserAuthState({ user: null, isUserLoading: true, userError: null }); // Reset on auth instance change
+    
+    setUserAuthState(prevState => ({ ...prevState, isUserLoading: true }));
+
     const unsubscribe = onAuthStateChanged(
       auth,
-      (firebaseUser) => {
-        setUserAuthState({
-          user: firebaseUser,
-          isUserLoading: false,
-          userError: null,
-        });
+      async (firebaseUser) => {
+        if (firebaseUser) {
+          try {
+            const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true); // Force refresh
+            const userClaims = (idTokenResult.claims as AppClaims) || null;
+            setUserAuthState({
+              user: firebaseUser,
+              claims: userClaims,
+              isUserLoading: false,
+              userError: null,
+            });
+          } catch (error) {
+             console.error('FirebaseProvider: Error getting user claims:', error);
+             setUserAuthState({
+                user: firebaseUser, // Still set the user
+                claims: null,
+                isUserLoading: false,
+                userError: error instanceof Error ? error : new Error('Failed to get user claims'),
+             });
+          }
+        } else {
+          // No user
+          setUserAuthState({
+            user: null,
+            claims: null,
+            isUserLoading: false,
+            userError: null,
+          });
+        }
       },
       (error) => {
         console.error('FirebaseProvider: onAuthStateChanged error:', error);
-        setUserAuthState({ user: null, isUserLoading: false, userError: error });
+        setUserAuthState({ user: null, claims: null, isUserLoading: false, userError: error });
       }
     );
     return () => unsubscribe();
   }, [auth, setUserAuthState]);
+
   return null;
 };
 
@@ -110,6 +138,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 }) => {
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: null,
+    claims: null,
     isUserLoading: true, // Start loading until first auth event
     userError: null,
   });
@@ -123,6 +152,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       firestore: servicesAvailable ? firestore : null,
       auth: servicesAvailable ? auth : null,
       user: userAuthState.user,
+      claims: userAuthState.claims,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
     };
@@ -164,6 +194,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     firestore: context.firestore,
     auth: context.auth,
     user: context.user,
+    claims: context.claims,
     isUserLoading: context.isUserLoading,
     userError: context.userError,
   };
@@ -203,12 +234,12 @@ export function useMemoFirebase<T>(
 }
 
 /**
- * Hook specifically for accessing the authenticated user's state.
- * This provides the User object, loading status, and any auth errors.
- * @returns {UserHookResult} Object with user, isUserLoading, userError.
+ * Hook specifically for accessing the authenticated user's state, including their role.
+ * This provides the User object, loading status, any auth errors, and role from custom claims.
+ * @returns {UserHookResult} Object with user, isUserLoading, userError, and role.
  */
 export const useUser = (): UserHookResult => {
-  // Renamed from useAuthUser
-  const { user, isUserLoading, userError } = useFirebase(); // Leverages the main hook
-  return { user, isUserLoading, userError };
+  const { user, claims, isUserLoading, userError } = useFirebase();
+  const role = claims?.role || null;
+  return { user, isUserLoading, userError, role };
 };

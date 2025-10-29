@@ -30,7 +30,7 @@ type LoginSchema = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, role } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
@@ -45,9 +45,13 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/dashboard');
+      if (role === 'admin') {
+        router.push('/dashboard');
+      } else {
+        router.push('/chat');
+      }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, role, router]);
 
   const onSubmit: SubmitHandler<LoginSchema> = async (data) => {
     setIsLoggingIn(true);
@@ -55,7 +59,7 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: 'Đăng nhập thành công!',
-        description: 'Đang chuyển hướng đến trang tổng quan...',
+        description: 'Đang chuyển hướng...',
       });
       // The useEffect above will handle the redirect
     } catch (error: any) {
@@ -99,7 +103,7 @@ export default function LoginPage() {
           <Scale className="mx-auto h-10 w-10 text-primary" />
           <CardTitle className="text-2xl">Đăng nhập</CardTitle>
           <CardDescription>
-            Nhập thông tin của bạn để truy cập vào bảng điều khiển
+            Nhập thông tin của bạn để truy cập
           </CardDescription>
         </CardHeader>
         <CardContent>

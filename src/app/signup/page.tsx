@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Scale, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 const signupSchema = z
@@ -36,7 +36,7 @@ type SignupSchema = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, role } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningUp, setIsSigningUp] = React.useState(false);
@@ -51,7 +51,8 @@ export default function SignupPage() {
 
   React.useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/dashboard');
+       // New users are regular users, redirect to chat
+       router.push('/chat');
     }
   }, [user, isUserLoading, router]);
 
@@ -61,7 +62,7 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: 'Đăng ký thành công!',
-        description: 'Đang chuyển hướng đến trang tổng quan...',
+        description: 'Đang chuyển hướng đến trang trò chuyện...',
       });
       // The useEffect above will handle the redirect
     } catch (error: any) {
