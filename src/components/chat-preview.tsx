@@ -68,40 +68,41 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     formData.set('userId', finalUserId);
 
     const userMessage: Message = { id: Date.now(), role: 'user', content: query };
-    setMessages((prev) => [...prev, userMessage]);
+    const botMessage: Message = { id: Date.now() + 1, role: 'assistant', content: '' };
+
+    setMessages((prev) => [...prev, userMessage, botMessage]);
+    
     formRef.current?.reset();
     inputRef.current?.focus();
 
     startTransition(async () => {
-      const result = await getLawSummary({ query, userId: finalUserId }, formData); // Pass previous state as first arg
+      const result = await getLawSummary({ query, userId: finalUserId }, formData);
+      
+      let finalBotMessage: Message;
       if (result.error) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
+        finalBotMessage = {
+            ...botMessage,
             role: 'error',
             content: `Rất tiếc, đã có lỗi xảy ra: ${result.error}`,
-          },
-        ]);
-      } else if (result.summary) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: 'assistant',
-            content: '', // content is not needed for assistant
-            summary: result.summary,
-            sourceArticles: result.sourceArticles,
-          },
-        ]);
+        };
+      } else {
+        finalBotMessage = {
+          ...botMessage,
+          summary: result.summary,
+          sourceArticles: result.sourceArticles,
+        };
       }
+
+      setMessages((prev) => 
+        prev.map(msg => msg.id === botMessage.id ? finalBotMessage : msg)
+      );
     });
   };
 
   const handleQuickReplyClick = (text: string) => {
     if (inputRef.current) {
-      const formData = new FormData();
-      formData.set('query', text);
+      inputRef.current.value = text;
+      const formData = new FormData(formRef.current!);
       handleFormSubmit(formData);
     }
   };
@@ -159,7 +160,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
             ) : (
                 messages.map((message) => (
                     <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                         {message.role === 'assistant' && (
+                         {message.role !== 'user' && (
                             <Avatar className="h-8 w-8 border">
                                 <AvatarFallback className="bg-primary text-primary-foreground" style={{ backgroundColor: 'var(--chat-primary-color)' }}><Bot /></AvatarFallback>
                             </Avatar>
@@ -175,7 +176,9 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                          >
                             {message.role === 'user' ? (
                                 <p>{message.content}</p>
-                            ) : message.role === 'assistant' ? (
+                            ) : message.role === 'error' ? (
+                                <p>{message.content}</p>
+                            ) : message.summary ? (
                                 <div className="space-y-2">
                                     <p className="font-semibold">Đây là câu trả lời cho câu hỏi của bạn:</p>
                                     <p>{message.summary}</p>
@@ -189,7 +192,9 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                                     )}
                                 </div>
                             ) : (
-                                <p>{message.content}</p>
+                               <div className="flex items-center">
+                                    <Loader2 className="animate-spin h-5 w-5" />
+                                </div>
                             )}
                          </div>
                          {message.role === 'user' && (
@@ -199,16 +204,6 @@ export function ChatPreview({ config }: ChatPreviewProps) {
                          )}
                     </div>
                 ))
-            )}
-            {isPending && (
-              <div className="flex gap-3">
-                  <Avatar className="h-8 w-8 border">
-                      <AvatarFallback className="bg-primary text-primary-foreground" style={{ backgroundColor: 'var(--chat-primary-color)' }}><Bot /></AvatarFallback>
-                  </Avatar>
-                  <div className="rounded-lg p-3 max-w-[80%] text-sm bg-background flex items-center">
-                      <Loader2 className="animate-spin h-5 w-5" />
-                  </div>
-              </div>
             )}
            </div>
         </ScrollArea>

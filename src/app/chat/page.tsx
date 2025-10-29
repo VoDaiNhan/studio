@@ -94,39 +94,39 @@ export default function ChatPage() {
     const currentQuery = formData.get('query') as string;
     if (!currentQuery?.trim()) return;
 
-    if (user?.uid) {
-        formData.set('userId', user.uid);
-    }
+    const userId = user?.uid || 'anonymous';
+    formData.set('userId', userId);
 
     const userMessage: Message = { id: Date.now(), role: 'user', content: currentQuery };
-    setMessages((prev) => [...prev, userMessage]);
+    const botMessage: Message = { id: Date.now() + 1, role: 'assistant', content: '' };
+    
+    setMessages((prev) => [...prev, userMessage, botMessage]);
+    
     formRef.current?.reset();
     inputRef.current?.focus();
     setQuery('');
 
     startTransition(async () => {
-      const result = await getLawSummary({ query: currentQuery, userId: user?.uid }, formData); // Pass previous state as first arg
+      const result = await getLawSummary({ query: currentQuery, userId }, formData);
+      
+      let finalBotMessage: Message;
       if (result.error) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: 'error',
-            content: `Rất tiếc, đã có lỗi xảy ra: ${result.error}`,
-          },
-        ]);
-      } else if (result.summary) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: 'assistant',
-            content: '',
-            summary: result.summary,
-            sourceArticles: result.sourceArticles,
-          },
-        ]);
+        finalBotMessage = {
+          ...botMessage,
+          role: 'error',
+          content: `Rất tiếc, đã có lỗi xảy ra: ${result.error}`,
+        };
+      } else {
+        finalBotMessage = {
+          ...botMessage,
+          summary: result.summary,
+          sourceArticles: result.sourceArticles,
+        };
       }
+      
+      setMessages((prev) => 
+        prev.map(msg => msg.id === botMessage.id ? finalBotMessage : msg)
+      );
     });
   };
 
@@ -137,117 +137,110 @@ export default function ChatPage() {
   ];
 
   return (
-      <div className="relative h-full flex flex-col items-center pt-16">
-
-        {/* History Sidebar */}
-        <aside className="absolute top-20 right-8 w-64 hidden lg:block">
-            <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-sm font-semibold">Lịch sử trò chuyện</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ul className="space-y-3">
-                        {recentHistory.map((item) => (
-                            <li key={item.id} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-primary">
-                                <span className="h-2 w-2 rounded-full bg-gray-300"></span>
-                                <span className='flex-1 truncate'>{item.text}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </CardContent>
-            </Card>
-        </aside>
-
-        <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col">
-            <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                <div className="p-4 flex flex-col gap-4">
-                    {messages.length === 0 && !isPending ? (
-                        <div className='flex flex-col items-center justify-center text-center h-full pt-20'>
-                            <AiLogo />
-                            <h2 className="text-2xl font-semibold mt-6 text-gray-700">AI Tra cứu Luật có thể hỗ trợ gì cho bạn?</h2>
-                        </div>
-                    ) : (
-                        messages.map((message) => (
-                            <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                                {message.role === 'assistant' && (
-                                    <Avatar className="h-8 w-8 border">
-                                        <AvatarFallback className="bg-blue-500 text-white"><Bot /></AvatarFallback>
-                                    </Avatar>
-                                )}
-                                <div className={`rounded-lg p-3 max-w-[80%] text-sm shadow-sm ${
-                                    message.role === 'user'
-                                        ? 'bg-blue-500 text-white'
-                                        : message.role === 'error'
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-white'
-                                }`}>
-                                    {message.role === 'user' ? (
-                                        <p>{message.content}</p>
-                                    ) : message.role === 'assistant' ? (
-                                        <div className="space-y-2">
-                                            <p>{message.summary}</p>
-                                            {message.sourceArticles && (
-                                                <>
-                                                    <Separator />
-                                                    <p className="text-xs text-gray-500">
-                                                        <span className="font-semibold">Nguồn:</span> {message.sourceArticles}
-                                                    </p>
-                                                </>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <p>{message.content}</p>
+      <div className="h-full flex flex-col items-center pt-16">
+        <div className="w-full max-w-5xl mx-auto flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8 px-4">
+            <div className="lg:col-span-3 flex flex-col h-full">
+                <ScrollArea className="flex-1" ref={scrollAreaRef}>
+                    <div className="p-4 flex flex-col gap-4">
+                        {messages.length === 0 && !isPending ? (
+                            <div className='flex flex-col items-center justify-center text-center h-full pt-20'>
+                                <AiLogo />
+                                <h2 className="text-2xl font-semibold mt-6 text-gray-700">AI Tra cứu Luật có thể hỗ trợ gì cho bạn?</h2>
+                            </div>
+                        ) : (
+                            messages.map((message) => (
+                                <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                                    {message.role !== 'user' && (
+                                        <Avatar className="h-8 w-8 border">
+                                            <AvatarFallback className="bg-blue-500 text-white"><Bot /></AvatarFallback>
+                                        </Avatar>
+                                    )}
+                                    <div className={`rounded-lg p-3 max-w-[80%] text-sm shadow-sm ${
+                                        message.role === 'user'
+                                            ? 'bg-blue-500 text-white'
+                                            : message.role === 'error'
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-white'
+                                    }`}>
+                                        {message.role === 'user' ? (
+                                            <p>{message.content}</p>
+                                        ) : message.role === 'error' ? (
+                                            <p>{message.content}</p>
+                                        ) : message.summary ? (
+                                            <div className="space-y-2">
+                                                <p>{message.summary}</p>
+                                                {message.sourceArticles && (
+                                                    <>
+                                                        <Separator />
+                                                        <p className="text-xs text-gray-500">
+                                                            <span className="font-semibold">Nguồn:</span> {message.sourceArticles}
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center">
+                                                <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    {message.role === 'user' && (
+                                        <Avatar className="h-8 w-8 border">
+                                            <AvatarFallback><User /></AvatarFallback>
+                                        </Avatar>
                                     )}
                                 </div>
-                                {message.role === 'user' && (
-                                    <Avatar className="h-8 w-8 border">
-                                        <AvatarFallback><User /></AvatarFallback>
-                                    </Avatar>
-                                )}
-                            </div>
-                        ))
-                    )}
-                    {isPending && (
-                        <div className="flex gap-3">
-                            <Avatar className="h-8 w-8 border">
-                                <AvatarFallback className="bg-blue-500 text-white"><Bot /></AvatarFallback>
-                            </Avatar>
-                            <div className="rounded-lg p-3 max-w-[80%] text-sm bg-white flex items-center shadow-sm">
-                                <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </ScrollArea>
-        </div>
-        
-        <div className="p-4 w-full max-w-3xl mx-auto flex-shrink-0">
-            <div className='bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200'>
-                <form 
-                    ref={formRef} 
-                    action={handleFormSubmit}
-                    className="relative"
-                >
-                    <Input 
-                        ref={inputRef} 
-                        name="query" 
-                        placeholder="Nhập câu hỏi của bạn tại đây..." 
-                        className="pr-24 h-12 text-base rounded-lg border-gray-300 focus:ring-cyan-400 focus:border-cyan-400" 
-                        disabled={isPending}
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        maxLength={2000}
-                    />
-                    <div className="absolute right-24 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                        {query.length}/2000
+                            ))
+                        )}
                     </div>
-                    <MicrophoneButton />
-                    <SubmitButton />
-                </form>
-                <p className="text-xs text-center text-gray-400 mt-3">
-                    Thông tin được tạo ra bằng AI. Hãy luôn cẩn trọng và sử dụng thông tin AI một cách có trách nhiệm.
-                </p>
+                </ScrollArea>
+                <div className="p-4 w-full mx-auto flex-shrink-0">
+                    <div className='bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200'>
+                        <form 
+                            ref={formRef} 
+                            action={handleFormSubmit}
+                            className="relative"
+                        >
+                            <Input 
+                                ref={inputRef} 
+                                name="query" 
+                                placeholder="Nhập câu hỏi của bạn tại đây..." 
+                                className="pr-24 h-12 text-base rounded-lg border-gray-300 focus:ring-cyan-400 focus:border-cyan-400" 
+                                disabled={isPending}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                maxLength={2000}
+                            />
+                            <div className="absolute right-24 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                                {query.length}/2000
+                            </div>
+                            <MicrophoneButton />
+                            <SubmitButton />
+                        </form>
+                        <p className="text-xs text-center text-gray-400 mt-3">
+                            Thông tin được tạo ra bằng AI. Hãy luôn cẩn trọng và sử dụng thông tin AI một cách có trách nhiệm.
+                        </p>
+                    </div>
+                </div>
             </div>
+
+            <aside className="hidden lg:block lg:col-span-1 py-4">
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-lg sticky top-20">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold">Lịch sử trò chuyện</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-3">
+                            {recentHistory.map((item) => (
+                                <li key={item.id} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-primary">
+                                    <span className="h-2 w-2 rounded-full bg-gray-300"></span>
+                                    <span className='flex-1 truncate'>{item.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+            </aside>
         </div>
       </div>
   );
