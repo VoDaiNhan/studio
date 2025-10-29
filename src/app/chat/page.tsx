@@ -47,24 +47,24 @@ function AiLogo() {
             <path d="M37.8631 34.823L47.5351 6.82299C47.5351 6.82299 43.7431 3.55899 41.5351 5.35899C39.3271 7.15899 39.4151 10.279 39.4151 10.279L30.6871 31.879L37.8631 34.823Z" fill="url(#paint4_linear_1_2)"/>
             <defs>
                 <linearGradient id="paint0_linear_1_2" x1="26.336" y1="50.2" x2="26.336" y2="79.6" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#00BAF4"/>
-                <stop offset="1" stop-color="#0058F9"/>
+                <stop stopColor="#00BAF4"/>
+                <stop offset="1" stopColor="#0058F9"/>
                 </linearGradient>
                 <linearGradient id="paint1_linear_1_2" x1="61.536" y1="50.2" x2="61.536" y2="79.6" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#00E5E5"/>
-                <stop offset="1" stop-color="#00A2F9"/>
+                <stop stopColor="#00E5E5"/>
+                <stop offset="1" stopColor="#00A2F9"/>
                 </linearGradient>
                 <linearGradient id="paint2_linear_1_2" x1="26.336" y1="0" x2="26.336" y2="60" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#00BAF4"/>
-                <stop offset="1" stop-color="#0058F9"/>
+                <stop stopColor="#00BAF4"/>
+                <stop offset="1" stopColor="#0058F9"/>
                 </linearGradient>
                 <linearGradient id="paint3_linear_1_2" x1="25.948" y1="0.5" x2="25.948" y2="59.5" gradientUnits="userSpaceOnUse">
-                <stop stop-color="white"/>
-                <stop offset="1" stop-color="white" stop-opacity="0"/>
+                <stop stopColor="white"/>
+                <stop offset="1" stopColor="white" stopOpacity="0"/>
                 </linearGradient>
                 <linearGradient id="paint4_linear_1_2" x1="39.6151" y1="5.19999" x2="39.6151" y2="35.4" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#00E5E5"/>
-                <stop offset="1" stop-color="#00A2F9"/>
+                <stop stopColor="#00E5E5"/>
+                <stop offset="1" stopColor="#00A2F9"/>
                 </linearGradient>
             </defs>
         </svg>
@@ -252,5 +252,3 @@ export default function ChatPage() {
       </div>
   );
 }
-
-    
