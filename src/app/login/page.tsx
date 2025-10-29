@@ -59,11 +59,25 @@ export default function LoginPage() {
       });
       // The useEffect above will handle the redirect
     } catch (error: any) {
-      console.error(error);
+      let description = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+      switch (error.code) {
+        case 'auth/invalid-credential':
+          description = 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.';
+          break;
+        case 'auth/user-not-found':
+          description = 'Không tìm thấy tài khoản với email này.';
+          break;
+        case 'auth/wrong-password':
+          description = 'Mật khẩu không đúng. Vui lòng thử lại.';
+          break;
+        default:
+          description = 'Đã có lỗi không mong muốn xảy ra.';
+          break;
+      }
       toast({
         variant: 'destructive',
         title: 'Đăng nhập thất bại',
-        description: 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.',
+        description: description,
       });
     } finally {
       setIsLoggingIn(false);
