@@ -35,7 +35,9 @@ const prompt = ai.definePrompt({
 
 Nếu không có luật liên quan nào được cung cấp (relevantLaws trống), hãy trả lời rằng bạn không thể tìm thấy thông tin cho câu hỏi đó và đề nghị người dùng cung cấp thêm thông tin hoặc đặt một câu hỏi khác rõ ràng hơn.
 
-Nếu có luật liên quan, nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp. Luôn trả lời bằng tiếng Việt.
+Nếu có luật liên quan, nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp.
+
+Luôn trả lời bằng tiếng Việt và dưới dạng văn bản thuần túy, không sử dụng định dạng Markdown (ví dụ: dấu hoa thị *, gạch đầu dòng -).
 
 Câu hỏi của người dùng: {{{query}}}
 Luật liên quan: {{{relevantLaws}}}
