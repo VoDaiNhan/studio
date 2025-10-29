@@ -17,7 +17,7 @@ export interface LawSummaryState {
 
 const QuerySchema = z.object({
   query: z.string().min(1, 'Please enter a question.'),
-  userId: z.string().optional(),
+  userId: z.string(), // userId is now required
 });
 
 export async function getLawSummary(
@@ -31,7 +31,7 @@ export async function getLawSummary(
 
   if (!validatedFields.success) {
     return {
-      error: validatedFields.error.flatten().fieldErrors.query?.[0],
+      error: validatedFields.error.flatten().fieldErrors.query?.[0] || validatedFields.error.flatten().fieldErrors.userId?.[0],
     };
   }
   
@@ -46,23 +46,21 @@ export async function getLawSummary(
     });
 
     // Save to Firestore
-    if (userId) {
-        try {
-            const { firestore } = initializeFirebase();
-            const conversationsCol = collection(firestore, 'conversations');
-            await addDoc(conversationsCol, {
-                userQuery: query,
-                botSummary: summary,
-                sourceArticles: sourceArticles,
-                timestamp: serverTimestamp(),
-                isVerified: false,
-                userId: userId, // Add userId to the document
-            });
-        } catch (dbError) {
-            console.error("Firestore save error:", dbError);
-            // We can decide if we want to bubble this error up to the UI
-            // For now, we'll just log it and the user will still see the answer
-        }
+    try {
+        const { firestore } = initializeFirebase();
+        const conversationsCol = collection(firestore, 'conversations');
+        await addDoc(conversationsCol, {
+            userQuery: query,
+            botSummary: summary,
+            sourceArticles: sourceArticles,
+            timestamp: serverTimestamp(),
+            isVerified: false,
+            userId: userId, // Add userId to the document
+        });
+    } catch (dbError) {
+        console.error("Firestore save error:", dbError);
+        // We can decide if we want to bubble this error up to the UI
+        // For now, we'll just log it and the user will still see the answer
     }
 
 

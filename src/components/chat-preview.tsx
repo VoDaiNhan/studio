@@ -63,9 +63,9 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     const query = formData.get('query') as string;
     if (!query?.trim()) return;
 
-    if (user?.uid) {
-        formData.set('userId', user.uid);
-    }
+    // Use anonymous UID if user is not logged in
+    const finalUserId = user ? user.uid : 'anonymous';
+    formData.set('userId', finalUserId);
 
     const userMessage: Message = { id: Date.now(), role: 'user', content: query };
     setMessages((prev) => [...prev, userMessage]);
@@ -73,7 +73,7 @@ export function ChatPreview({ config }: ChatPreviewProps) {
     inputRef.current?.focus();
 
     startTransition(async () => {
-      const result = await getLawSummary({ query, userId: user?.uid }, formData); // Pass previous state as first arg
+      const result = await getLawSummary({ query, userId: finalUserId }, formData); // Pass previous state as first arg
       if (result.error) {
         setMessages((prev) => [
           ...prev,
