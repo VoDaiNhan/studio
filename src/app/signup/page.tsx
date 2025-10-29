@@ -36,7 +36,7 @@ type SignupSchema = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const auth = useAuth();
-  const { user, isUserLoading, role } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningUp, setIsSigningUp] = React.useState(false);

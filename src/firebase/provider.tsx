@@ -90,7 +90,15 @@ const AuthManager = ({
         if (firebaseUser) {
           try {
             const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true); // Force refresh
-            const userClaims = (idTokenResult.claims as AppClaims) || null;
+            let userClaims = (idTokenResult.claims as AppClaims) || {};
+            
+            // Hardcoded admin role for specific email
+            if (firebaseUser.email === 'nhan1545a@gmail.com') {
+                userClaims.role = 'admin';
+            } else if (!userClaims.role) {
+                userClaims.role = 'user';
+            }
+
             setUserAuthState({
               user: firebaseUser,
               claims: userClaims,
@@ -126,6 +134,14 @@ const AuthManager = ({
 
   return null;
 };
+
+interface FirebaseProviderProps {
+  children: ReactNode;
+  firebaseApp: FirebaseApp | null;
+  firestore: Firestore | null;
+  auth: Auth | null;
+}
+
 
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
@@ -240,6 +256,16 @@ export function useMemoFirebase<T>(
  */
 export const useUser = (): UserHookResult => {
   const { user, claims, isUserLoading, userError } = useFirebase();
-  const role = claims?.role || null;
+  
+  // Logic to determine role
+  let role: 'admin' | 'user' | null = null;
+  if (user) {
+    if (user.email === 'nhan1545a@gmail.com') {
+      role = 'admin';
+    } else {
+      role = claims?.role || 'user'; // Default new users to 'user' role
+    }
+  }
+
   return { user, isUserLoading, userError, role };
 };
