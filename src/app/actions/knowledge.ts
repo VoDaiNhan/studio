@@ -4,14 +4,28 @@ import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import type { KnowledgeSource } from '@/lib/knowledge';
+import { cache } from '@/lib/cache';
 
 const dataFilePath = path.join(process.cwd(), 'src', 'data', 'knowledge-sources.json');
+const CACHE_KEY = 'knowledge-sources';
+const CACHE_TTL = 60000; // 1 minute
 
-// Helper function to read data from the JSON file
+// Helper function to read data from the JSON file with caching
 async function readData(): Promise<KnowledgeSource[]> {
+  // OPTIMIZATION: Check cache first
+  const cached = cache.get<KnowledgeSource[]>(CACHE_KEY, CACHE_TTL);
+  if (cached !== null) {
+    return cached;
+  }
+
   try {
     const jsonData = await fs.readFile(dataFilePath, 'utf-8');
-    return JSON.parse(jsonData);
+    const data = JSON.parse(jsonData);
+    
+    // OPTIMIZATION: Store in cache
+    cache.set(CACHE_KEY, data, CACHE_TTL);
+    
+    return data;
   } catch (error) {
     // If the file doesn't exist, return an empty array
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
@@ -24,6 +38,9 @@ async function readData(): Promise<KnowledgeSource[]> {
 // Helper function to write data to the JSON file
 async function writeData(data: KnowledgeSource[]): Promise<void> {
   await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
+  
+  // OPTIMIZATION: Invalidate cache when data changes
+  cache.clear(CACHE_KEY);
 }
 
 // Schema for creating a new knowledge source

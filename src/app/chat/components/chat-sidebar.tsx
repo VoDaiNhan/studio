@@ -2,9 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileText, FileSearch, BotMessageSquare, FileSignature, Files, ShieldQuestion, Phone } from 'lucide-react';
-import Image from 'next/image';
+import { Plus, FileText, Files, ShieldQuestion, Phone, LayoutDashboard, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 function AiLogo() {
     return (
@@ -42,11 +42,14 @@ function AiLogo() {
 
 export function ChatSidebar() {
   const router = useRouter();
+  const { role } = useUser();
 
   const handleNewChat = () => {
     router.push('/chat');
     router.refresh();
   };
+
+  const isAdmin = role === 'admin';
 
   return (
     <aside className="w-64 flex-shrink-0 bg-white p-4 flex flex-col justify-between">
@@ -68,14 +71,35 @@ export function ChatSidebar() {
             </Button>
 
             <nav className="space-y-4">
-                <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                {isAdmin && (
+                    <div 
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => router.push('/dashboard')}
+                    >
+                        <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <LayoutDashboard className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-base font-semibold text-gray-800">Dashboard Admin</h3>
+                            <Badge variant="secondary" className="text-xs mt-1">Quản trị</Badge>
+                        </div>
+                    </div>
+                )}
+
+                <div 
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => router.push('/chat')}
+                >
                     <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
                         <FileText className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
                         <h3 className="text-base font-semibold text-gray-800">Văn bản Pháp Luật</h3>
                         <button 
-                            onClick={() => router.push('/lookup')} 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push('/lookup');
+                            }} 
                             className="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 mt-0.5"
                         >
                             <span className="text-xs">···</span>
@@ -86,22 +110,36 @@ export function ChatSidebar() {
 
                 <div 
                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => alert('Chức năng đang phát triển')}
+                    onClick={() => router.push('/templates')}
                 >
-                    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <FileSignature className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Files className="h-6 w-6 text-green-600" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-800">Thủ tục hành chính</h3>
+                        <h3 className="text-base font-semibold text-gray-800">Mẫu đơn pháp lý</h3>
                     </div>
                 </div>
+
+                {!isAdmin && (
+                    <div 
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => router.push('/settings')}
+                    >
+                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Settings className="h-6 w-6 text-gray-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-base font-semibold text-gray-800">Cài đặt</h3>
+                        </div>
+                    </div>
+                )}
 
                 <div 
                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
                     onClick={() => alert('Liên hệ: support@tracuuluat.vn')}
                 >
-                    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <ShieldQuestion className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <ShieldQuestion className="h-6 w-6 text-orange-600" />
                     </div>
                     <div className="flex-1">
                         <h3 className="text-base font-semibold text-gray-800">Hỗ trợ</h3>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { getLawSummary, type LawSummaryState } from '@/app/actions';
+import { getAppearanceConfig, type AppearanceConfig } from '@/app/actions/appearance';
 import { useUser, initializeFirebase } from '@/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -10,8 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, User, Loader2, Mic } from 'lucide-react';
+import { Bot, Send, User, Loader2, Mic, History } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { ChatSidebar } from '@/components/chat-sidebar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Message {
   id: number;
@@ -21,18 +24,30 @@ interface Message {
   sourceArticles?: string;
 }
 
-function SubmitButton() {
+function SubmitButton({ primaryColor }: { primaryColor?: string }) {
   const { pending } = useFormStatus();
   return (
-    <Button size="icon" type="submit" disabled={pending} className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-cyan-400 hover:bg-cyan-500 text-white">
+    <Button 
+      size="icon" 
+      type="submit" 
+      disabled={pending} 
+      className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-white"
+      style={{ backgroundColor: primaryColor || '#06B6D4' }}
+    >
       {pending ? <Loader2 className="animate-spin" /> : <Send className="h-4 w-4" />}
     </Button>
   );
 }
 
-function MicrophoneButton() {
+function MicrophoneButton({ accentColor }: { accentColor?: string }) {
     return (
-        <Button size="icon" type="button" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-cyan-400 hover:text-cyan-500">
+        <Button 
+          size="icon" 
+          type="button" 
+          variant="ghost" 
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
+          style={{ color: accentColor || '#06B6D4' }}
+        >
             <Mic className="h-5 w-5" />
         </Button>
     )
@@ -77,11 +92,32 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
   const [recentHistory, setRecentHistory] = useState<Array<{id: string, text: string, summary?: string, sourceArticles?: string}>>([]);
+  const [config, setConfig] = useState<AppearanceConfig | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const { user } = useUser();
+
+  // Load appearance config
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const appearanceConfig = await getAppearanceConfig();
+        setConfig(appearanceConfig);
+        
+        // Apply CSS variables for theming
+        if (appearanceConfig) {
+          document.documentElement.style.setProperty('--primary-color', appearanceConfig.primaryColor);
+          document.documentElement.style.setProperty('--accent-color', appearanceConfig.accentColor);
+          document.documentElement.style.setProperty('--background-color', appearanceConfig.backgroundColor);
+        }
+      } catch (error) {
+        console.error('Error loading appearance config:', error);
+      }
+    };
+    loadConfig();
+  }, []);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -207,32 +243,45 @@ export default function ChatPage() {
   };
 
   return (
-      <div className="h-full flex flex-col items-center pt-16">
-        <div className="w-full max-w-5xl mx-auto flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8 px-4">
-            <div className="lg:col-span-3 flex flex-col h-full">
+      <div className="h-full flex flex-col">
+        <div className="flex-1 flex overflow-hidden">
+            {/* Left Sidebar */}
+            <ChatSidebar />
+            
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col">
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full" ref={scrollAreaRef}>
                         <div className="p-4 flex flex-col gap-4">
                             {messages.length === 0 && !isPending ? (
                                 <div className='flex flex-col items-center justify-center text-center h-full pt-20'>
                                     <AiLogo />
-                                    <h2 className="text-2xl font-semibold mt-6 text-gray-700">AI Tra cứu Luật có thể hỗ trợ gì cho bạn?</h2>
+                                    <h2 className="text-2xl font-semibold mt-6 text-gray-700">
+                                      {config?.displayName || 'AI Tra cứu Luật'} có thể hỗ trợ gì cho bạn?
+                                    </h2>
+                                    {config?.welcomeMessage && (
+                                      <p className="text-sm text-gray-500 mt-2 max-w-md">
+                                        {config.welcomeMessage}
+                                      </p>
+                                    )}
                                 </div>
                             ) : (
                                 messages.map((message) => (
                                     <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                                         {message.role !== 'user' && (
                                             <Avatar className="h-8 w-8 border">
-                                                <AvatarFallback className="bg-blue-500 text-white"><Bot /></AvatarFallback>
+                                                <AvatarFallback style={{ backgroundColor: config?.primaryColor || '#3B82F6' }} className="text-white">
+                                                  <Bot />
+                                                </AvatarFallback>
                                             </Avatar>
                                         )}
                                         <div className={`rounded-lg p-3 max-w-[80%] text-sm shadow-sm ${
                                             message.role === 'user'
-                                                ? 'bg-blue-500 text-white'
+                                                ? 'text-white'
                                                 : message.role === 'error'
                                                 ? 'bg-red-100 text-red-800'
                                                 : 'bg-white'
-                                        }`}>
+                                        }`} style={message.role === 'user' ? { backgroundColor: config?.primaryColor || '#3B82F6' } : {}}>
                                             {message.role === 'user' ? (
                                                 <p>{message.content}</p>
                                             ) : message.role === 'error' ? (
@@ -286,8 +335,8 @@ export default function ChatPage() {
                             <div className="absolute right-24 top-1/2 -translate-y-1/2 text-sm text-gray-400">
                                 {query.length}/2000
                             </div>
-                            <MicrophoneButton />
-                            <SubmitButton />
+                            <MicrophoneButton accentColor={config?.accentColor} />
+                            <SubmitButton primaryColor={config?.primaryColor} />
                         </form>
                         <p className="text-xs text-center text-gray-400 mt-3">
                             Thông tin được tạo ra bằng AI. Hãy luôn cẩn trọng và sử dụng thông tin AI một cách có trách nhiệm.
@@ -295,44 +344,6 @@ export default function ChatPage() {
                     </div>
                 </div>
             </div>
-
-            <aside className="hidden lg:block lg:col-span-1 py-4">
-                <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-lg sticky top-20">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold">Lịch sử trò chuyện</CardTitle>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-7 text-xs"
-                                onClick={() => window.location.href = '/history'}
-                            >
-                                Xem tất cả
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {recentHistory.length === 0 ? (
-                            <p className="text-xs text-gray-400 text-center py-4">
-                                Chưa có lịch sử trò chuyện
-                            </p>
-                        ) : (
-                            <ul className="space-y-3">
-                                {recentHistory.map((item) => (
-                                    <li 
-                                        key={item.id} 
-                                        className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-primary"
-                                        onClick={() => loadConversation(item)}
-                                    >
-                                        <span className="h-2 w-2 rounded-full bg-gray-300"></span>
-                                        <span className='flex-1 truncate'>{item.text}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </CardContent>
-                </Card>
-            </aside>
         </div>
       </div>
   );

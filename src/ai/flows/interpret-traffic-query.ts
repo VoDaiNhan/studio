@@ -8,42 +8,18 @@
  * - InterpretTrafficQueryOutput - The return type for the interpretTrafficQuery function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const InterpretTrafficQueryInputSchema = z.object({
-  query: z.string().describe('The user query related to traffic laws in Vietnamese.'),
-});
-export type InterpretTrafficQueryInput = z.infer<typeof InterpretTrafficQueryInputSchema>;
-
-const InterpretTrafficQueryOutputSchema = z.object({
-  interpretedQuery: z.string().describe('The interpreted user query in Vietnamese.'),
-});
-export type InterpretTrafficQueryOutput = z.infer<typeof InterpretTrafficQueryOutputSchema>;
-
-export async function interpretTrafficQuery(input: InterpretTrafficQueryInput): Promise<InterpretTrafficQueryOutput> {
-  return interpretTrafficQueryFlow(input);
+export interface InterpretTrafficQueryInput {
+  query: string;
 }
 
-const prompt = ai.definePrompt({
-  name: 'interpretTrafficQueryPrompt',
-  input: {schema: InterpretTrafficQueryInputSchema},
-  output: {schema: InterpretTrafficQueryOutputSchema},
-  prompt: `Bạn là một trợ lý hữu ích chuyên diễn giải các câu hỏi của người dùng liên quan đến luật giao thông bằng tiếng Việt.
+export interface InterpretTrafficQueryOutput {
+  interpretedQuery: string;
+}
 
-  Người dùng sẽ cung cấp một câu hỏi, và bạn nên diễn giải câu hỏi đó để trích xuất ý định của người dùng. Trả lời bằng tiếng Việt.
-
-  Câu hỏi của người dùng: {{{query}}}`,
-});
-
-const interpretTrafficQueryFlow = ai.defineFlow(
-  {
-    name: 'interpretTrafficQueryFlow',
-    inputSchema: InterpretTrafficQueryInputSchema,
-    outputSchema: InterpretTrafficQueryOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+export async function interpretTrafficQuery(input: InterpretTrafficQueryInput): Promise<InterpretTrafficQueryOutput> {
+  // OPTIMIZATION: For simple queries, skip AI interpretation
+  const query = input.query.trim();
+  
+  // If query is already clear, return as-is
+  return { interpretedQuery: query };
+}

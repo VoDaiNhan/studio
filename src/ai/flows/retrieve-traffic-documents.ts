@@ -36,6 +36,10 @@ export async function retrieveTrafficDocuments(
   return retrieveTrafficDocumentsFlow(input);
 }
 
+// OPTIMIZATION: Cache knowledge sources to avoid repeated file reads
+let cachedSources: { data: any[], timestamp: number } | null = null;
+const CACHE_TTL = 60000; // 1 minute cache
+
 const retrieveTrafficDocumentsFlow = ai.defineFlow(
   {
     name: 'retrieveTrafficDocumentsFlow',
@@ -43,45 +47,66 @@ const retrieveTrafficDocumentsFlow = ai.defineFlow(
     outputSchema: RetrieveTrafficDocumentsOutputSchema,
   },
   async (input) => {
-    const sources = await getKnowledgeSources();
+    // OPTIMIZATION 1: Use cached sources if available
+    const now = Date.now();
+    let sources;
+    
+    if (cachedSources && (now - cachedSources.timestamp) < CACHE_TTL) {
+      sources = cachedSources.data;
+    } else {
+      sources = await getKnowledgeSources();
+      cachedSources = { data: sources, timestamp: now };
+    }
+    
     const activeSources = sources.filter(s => s.status === 'active');
     
-    // This is a simplified RAG implementation.
-    // In a real-world scenario, you would:
-    // 1. Embed the user's query and the document chunks.
-    // 2. Perform a vector similarity search to find the most relevant chunks.
-    // 3. Return the content of those relevant chunks.
-
-    // Simple keyword matching in the title for now. Filter out short/common words.
-    const queryWords = input.query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+    // OPTIMIZATION 2: Enhanced keyword extraction with Vietnamese stopwords
+    const stopwords = ['là', 'của', 'và', 'có', 'được', 'trong', 'cho', 'về', 'với', 'khi', 'để'];
+    const queryWords = input.query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !stopwords.includes(w));
     
-    // If there are no meaningful words to search for, return no documents.
     if (queryWords.length === 0) {
         return { documents: [] };
     }
 
-    const documents = activeSources
-    .filter(source => {
+    // OPTIMIZATION 3: Score-based ranking for better relevance
+    const scoredDocs = activeSources
+      .map(source => {
         const title = source.title?.toLowerCase() || '';
-        // Check if any of the query words appear in the title
-        return queryWords.some(word => title.includes(word));
-    })
-    .map(source => {
-        let docString = `Document Title: ${source.title}\n`;
-        if (source.url) {
-            docString += `Source URL: ${source.url}\n`;
-        }
-        if (source.content) {
-            docString += `Content: ${source.content}`;
-        }
-        return docString;
+        const content = source.content?.toLowerCase() || '';
+        
+        let score = 0;
+        queryWords.forEach(word => {
+          // Title matches are more important
+          if (title.includes(word)) score += 3;
+          // Content matches
+          if (content.includes(word)) score += 1;
+        });
+        
+        return { source, score };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5); // OPTIMIZATION 4: Limit to top 5 documents
+
+    const documents = scoredDocs.map(({ source }) => {
+      let docString = `Tiêu đề: ${source.title}\n`;
+      if (source.url) {
+        docString += `Nguồn: ${source.url}\n`;
+      }
+      if (source.content) {
+        // OPTIMIZATION 5: Truncate very long content
+        const maxLength = 2000;
+        const content = source.content.length > maxLength 
+          ? source.content.substring(0, maxLength) + '...'
+          : source.content;
+        docString += `Nội dung: ${content}`;
+      }
+      return docString;
     });
     
-    // If no relevant documents are found, return an empty array.
-    if (documents.length === 0) {
-        return { documents: [] };
-    }
-
     return { documents };
   }
 );

@@ -37,18 +37,35 @@ export async function getLawSummary(
   const { query, userId } = validatedFields.data;
 
   try {
-    const { interpretedQuery } = await interpretTrafficQuery({ query });
-    const { documents } = await retrieveTrafficDocuments({ query: interpretedQuery });
+    // OPTIMIZATION 1: Run interpret and retrieve in parallel
+    const [{ interpretedQuery }, { documents }] = await Promise.all([
+      interpretTrafficQuery({ query }),
+      retrieveTrafficDocuments({ query }) // Use original query directly for faster retrieval
+    ]);
+
+    // OPTIMIZATION 2: Early return if no documents found
+    if (documents.length === 0) {
+      return {
+        summary: 'Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn. Vui lòng thử đặt câu hỏi cụ thể hơn hoặc sử dụng từ khóa khác.',
+        sourceArticles: '',
+        query,
+        userId
+      };
+    }
+
+    // OPTIMIZATION 3: Limit documents to top 3 most relevant for faster processing
+    const topDocuments = documents.slice(0, 3);
+
     const { summary, sourceArticles } = await summarizeRelevantLaws({
       query,
-      relevantLaws: documents.join('\n\n'),
+      relevantLaws: topDocuments.join('\n\n'),
     });
 
     return { summary, sourceArticles, query, userId };
   } catch (e) {
     console.error(e);
     return {
-      error: 'An error occurred while processing your request. Please try again.',
+      error: 'Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại.',
       query,
       userId,
     };

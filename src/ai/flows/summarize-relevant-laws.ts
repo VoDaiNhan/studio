@@ -8,50 +8,60 @@
  * - SummarizeRelevantLawsOutput - The return type for the summarizeRelevantLaws function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generateStructuredOutput } from '@/ai/openai';
 
-const SummarizeRelevantLawsInputSchema = z.object({
-  query: z.string().describe('The user query related to traffic laws in Vietnamese.'),
-  relevantLaws: z.string().describe('The relevant articles and clauses from the traffic law database in Vietnamese. This may be empty or contain base64 encoded content.'),
-});
-export type SummarizeRelevantLawsInput = z.infer<typeof SummarizeRelevantLawsInputSchema>;
-
-const SummarizeRelevantLawsOutputSchema = z.object({
-  summary: z.string().describe('A concise summary of the relevant legal information in Vietnamese. If no relevant laws are provided, state that you could not find an answer and ask for a more specific question.'),
-  sourceArticles: z.string().describe('The source articles and clauses used to compose the summary in Vietnamese. If no sources were used, this should be an empty string.'),
-});
-export type SummarizeRelevantLawsOutput = z.infer<typeof SummarizeRelevantLawsOutputSchema>;
-
-export async function summarizeRelevantLaws(input: SummarizeRelevantLawsInput): Promise<SummarizeRelevantLawsOutput> {
-  return summarizeRelevantLawsFlow(input);
+export interface SummarizeRelevantLawsInput {
+  query: string;
+  relevantLaws: string;
 }
 
-const prompt = ai.definePrompt({
-  name: 'summarizeRelevantLawsPrompt',
-  input: {schema: SummarizeRelevantLawsInputSchema},
-  output: {schema: SummarizeRelevantLawsOutputSchema},
-  prompt: `Bạn là một trợ lý hữu ích chuyên diễn giải các câu hỏi của người dùng liên quan đến luật giao thông bằng tiếng Việt.
+export interface SummarizeRelevantLawsOutput {
+  summary: string;
+  sourceArticles: string;
+}
 
-Nếu không có luật liên quan nào được cung cấp (relevantLaws trống), hãy trả lời rằng bạn không thể tìm thấy thông tin cho câu hỏi đó và đề nghị người dùng cung cấp thêm thông tin hoặc đặt một câu hỏi khác rõ ràng hơn.
-
-Nếu có luật liên quan, nhiệm vụ của bạn là tóm tắt các điều khoản và điều luật pháp lý sau đây một cách ngắn gọn, dễ hiểu và xác định các điều khoản, điều luật gốc được sử dụng để soạn tóm tắt. Nếu nội dung được cung cấp ở dạng base64, hãy xử lý nó dưới dạng tệp.
-
-Luôn trả lời bằng tiếng Việt và dưới dạng văn bản thuần túy, không sử dụng định dạng Markdown (ví dụ: dấu hoa thị *, gạch đầu dòng -).
-
-Câu hỏi của người dùng: {{{query}}}
-Luật liên quan: {{{relevantLaws}}}
-`,
-});
-
-const summarizeRelevantLawsFlow = ai.defineFlow(
-  {
-    name: 'summarizeRelevantLawsFlow',
-    inputSchema: SummarizeRelevantLawsInputSchema,
-    outputSchema: SummarizeRelevantLawsOutputSchema,
+const outputSchema = {
+  type: 'object',
+  properties: {
+    summary: {
+      type: 'string',
+      description: 'A concise summary of the relevant legal information in Vietnamese'
+    },
+    sourceArticles: {
+      type: 'string',
+      description: 'The source articles and clauses used'
+    }
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  required: ['summary', 'sourceArticles']
+};
+
+export async function summarizeRelevantLaws(input: SummarizeRelevantLawsInput): Promise<SummarizeRelevantLawsOutput> {
+  const promptText = `Bạn là trợ lý AI chuyên về luật pháp Việt Nam. Trả lời ngắn gọn, chính xác.
+
+Nếu không có luật liên quan: Nói rằng không tìm thấy thông tin và đề nghị người dùng hỏi cụ thể hơn.
+
+Nếu có luật liên quan: Tóm tắt ngắn gọn (2-3 đoạn) và nêu nguồn.
+
+Trả lời bằng tiếng Việt, văn bản thuần, không dùng Markdown.
+
+Câu hỏi: ${input.query}
+Luật: ${input.relevantLaws}
+`;
+
+  const systemInstruction = 'Bạn là trợ lý AI chuyên về luật pháp Việt Nam. Trả lời chính xác, ngắn gọn bằng tiếng Việt.';
+
+  try {
+    const result = await generateStructuredOutput<SummarizeRelevantLawsOutput>(
+      promptText,
+      outputSchema,
+      systemInstruction
+    );
+    return result;
+  } catch (error) {
+    console.error('Error in summarizeRelevantLaws:', error);
+    return {
+      summary: 'Xin lỗi, đã có lỗi xảy ra khi xử lý yêu cầu của bạn. Vui lòng thử lại.',
+      sourceArticles: ''
+    };
   }
-);
+}

@@ -1,6 +1,6 @@
 import { ChatLayout } from '@/components/chat-layout';
 
-export default function ChatPageLayout({
+export default function SettingsPageLayout({
   children,
 }: {
   children: React.ReactNode;

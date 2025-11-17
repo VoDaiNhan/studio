@@ -9,6 +9,8 @@
 - 🤖 **Chat AI thông minh**: Hỏi đáp tự nhiên về luật pháp với AI
 - 📚 **Tra cứu văn bản pháp luật**: Tìm kiếm và tra cứu các văn bản pháp luật
 - 💾 **Lịch sử trò chuyện**: Lưu trữ và xem lại các cuộc hội thoại
+- 📊 **Advanced Analytics**: Dashboard phân tích nâng cao với real-time metrics
+- 📥 **Export Reports**: Xuất báo cáo ra CSV, JSON, PDF
 - 🔐 **Xác thực người dùng**: Đăng nhập/Đăng ký với Firebase Authentication
 - 📱 **Responsive Design**: Giao diện thân thiện trên mọi thiết bị
 - 🎨 **UI/UX hiện đại**: Sử dụng Tailwind CSS và Radix UI components
@@ -216,6 +218,13 @@ npm run typecheck      # Kiểm tra TypeScript
 - Vào mục "Văn bản Pháp Luật"
 - Tìm kiếm văn bản theo từ khóa
 - Xem chi tiết văn bản pháp luật
+
+### 6. Xem Analytics
+
+- Click vào "Phân tích & Thống kê" trong sidebar
+- Xem các biểu đồ và metrics
+- Export báo cáo khi cần
+- Theo dõi real-time analytics
 
 ## 🔐 Bảo mật
 

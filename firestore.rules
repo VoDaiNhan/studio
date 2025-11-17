@@ -1,123 +1,35 @@
-/**
- * @fileoverview Firestore Security Rules for the traffic law chatbot application.
- *
- * Core Philosophy:
- * This ruleset prioritizes simplicity and clarity by enforcing strict owner-based access control for conversations
- * and allowing public read access to traffic laws, user queries, chatbot responses, and feedback.
- *
- * Data Structure:
- * - /conversations/{conversationId}: Stores chat history between users and the bot, accessible only by the owner (user who initiated the conversation).
- * - /trafficLaws/{trafficLawId}: Stores traffic law data, publicly readable.
- * - /userQueries/{userQueryId}: Stores user queries, publicly readable.
- * - /lawBotResponses/{lawBotResponseId}: Stores chatbot responses, publicly readable.
- * - /feedbacks/{feedbackId}: Stores user feedback, publicly readable.
- *
- * Key Security Decisions:
- * - Conversations are strictly controlled by the user who initiated them. Only the owner can create, read, update, or delete conversations.
- * - Traffic laws, user queries, chatbot responses, and feedback are considered public data and are readable by anyone.
- * - No user listing is allowed for the /conversations collection to protect user privacy.
- *
- * Denormalization for Authorization:
- * - The `Conversation` entity includes a `userId` field, which is used to directly enforce ownership. This avoids costly `get()` calls to other collections.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Controls access to user documents and their conversations subcollection.
-     * @path /users/{userId}/conversations/{conversationId}
-     * @allow (create, read, update, delete) Only the user can access their own conversations.
-     * @principle Enforces document ownership using subcollection structure - no composite index needed.
-     */
+    
+    // User profiles
+    match /users/{userId} {
+      // Allow read for authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow write only for the owner
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // User conversations
     match /users/{userId}/conversations/{conversationId} {
-      allow read, write: if isOwner(userId);
+      // Allow read/write only for the owner
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    /**
-     * @description Legacy conversations collection (kept for backward compatibility).
-     * @path /conversations/{conversationId}
-     */
+    
+    // Global conversations (if needed)
     match /conversations/{conversationId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      // Allow read for authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow write only for the owner
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-
-    /**
-     * @description Allows public read access to traffic law documents.
-     * @path /trafficLaws/{trafficLawId}
-     * @allow (get, list) Any user can read traffic law data.
-     * @deny (create, update, delete) No one can create, update, or delete traffic law data through client-side rules.
-     * @principle Allows public read access to traffic law data.
-     */
-    match /trafficLaws/{trafficLawId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+    
+    // Knowledge sources (admin only - for now allow authenticated users)
+    match /knowledge/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
-
-    /**
-     * @description Allows public read access to user query documents.
-     * @path /userQueries/{userQueryId}
-     * @allow (get, list) Any user can read user query data.
-     * @deny (create, update, delete) No one can create, update, or delete user query data through client-side rules.
-     * @principle Allows public read access to user query data.
-     */
-    match /userQueries/{userQueryId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
-    }
-
-    /**
-     * @description Allows public read access to law bot response documents.
-     * @path /lawBotResponses/{lawBotResponseId}
-     * @allow (get, list) Any user can read law bot response data.
-     * @deny (create, update, delete) No one can create, update, or delete law bot response data through client-side rules.
-     * @principle Allows public read access to law bot response data.
-     */
-    match /lawBotResponses/{lawBotResponseId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
-    }
-
-    /**
-     * @description Allows public read access to feedback documents.
-     * @path /feedbacks/{feedbackId}
-     * @allow (get, list) Any user can read feedback data.
-     * @deny (create, update, delete) No one can create, update, or delete feedback data through client-side rules.
-     * @principle Allows public read access to feedback data.
-     */
-    match /feedbacks/{feedbackId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
-    }
-  }
-
-  /**
-   * @description Checks if the user is signed in.
-   * @return {boolean} True if the user is signed in, false otherwise.
-   */
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  /**
-   * @description Checks if the user is the owner of the document.
-   * @param {string} userId The user ID to compare against the request's auth UID.
-   * @return {boolean} True if the user is the owner, false otherwise.
-   */
-  function isOwner(userId) {
-    return isSignedIn() && request.auth.uid == userId;
-  }
-
-    /**
-   * @description Checks if the user is the owner of the document and the resource exists.
-   * @param {string} userId The user ID to compare against the request's auth UID.
-   * @return {boolean} True if the user is the owner, false otherwise.
-   */
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }
