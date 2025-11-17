@@ -88,7 +88,9 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [logoFileName, setLogoFileName] = useState('Chưa có tệp nào được chọn');
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [chatbotIconFileName, setChatbotIconFileName] = useState('Chưa có tệp nào được chọn');
+    const [chatbotIconPreview, setChatbotIconPreview] = useState<string | null>(null);
     const [knowledgeFileName, setKnowledgeFileName] = useState('Chưa có tệp nào được chọn');
     const [date, setDate] = React.useState<DateRange | undefined>({
       from: subDays(new Date(), 20),
@@ -211,29 +213,58 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
     const handleSaveAppearance = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         
-        const validatedData = AppearanceConfigSchema.safeParse(config);
-
-        if (!validatedData.success) {
-             toast({
-                variant: "destructive",
-                title: "Dữ liệu không hợp lệ!",
-                description: "Vui lòng kiểm tra lại các trường đã nhập.",
-            });
-            return;
-        }
-
         startTransition(async () => {
-            const result = await updateAppearanceConfig(validatedData.data);
-            if (result.success) {
+            try {
+                let updatedConfig = { ...config };
+
+                // Upload logo if changed
+                if (logoPreview && logoPreview.startsWith('data:')) {
+                    const { uploadImage } = await import('@/app/actions/upload-image');
+                    const logoResult = await uploadImage(logoPreview, logoFileName, 'logo');
+                    if (logoResult.success && logoResult.url) {
+                        updatedConfig.logoUrl = logoResult.url;
+                    }
+                }
+
+                // Upload chatbot icon if changed
+                if (chatbotIconPreview && chatbotIconPreview.startsWith('data:')) {
+                    const { uploadImage } = await import('@/app/actions/upload-image');
+                    const iconResult = await uploadImage(chatbotIconPreview, chatbotIconFileName, 'chatbotIcon');
+                    if (iconResult.success && iconResult.url) {
+                        updatedConfig.chatbotIconUrl = iconResult.url;
+                    }
+                }
+
+                const validatedData = AppearanceConfigSchema.safeParse(updatedConfig);
+
+                if (!validatedData.success) {
+                    toast({
+                        variant: "destructive",
+                        title: "Dữ liệu không hợp lệ!",
+                        description: "Vui lòng kiểm tra lại các trường đã nhập.",
+                    });
+                    return;
+                }
+
+                const result = await updateAppearanceConfig(validatedData.data);
+                if (result.success) {
+                    setConfig(updatedConfig);
+                    toast({
+                        title: "Thành công!",
+                        description: "Đã lưu cài đặt giao diện và tải ảnh lên.",
+                    });
+                } else {
+                    toast({
+                        variant: "destructive",
+                        title: "Ôi, có lỗi!",
+                        description: result.error || "Không thể lưu cài đặt giao diện.",
+                    });
+                }
+            } catch (error) {
                 toast({
-                    title: "Thành công!",
-                    description: "Đã lưu cài đặt giao diện.",
-                });
-            } else {
-                 toast({
                     variant: "destructive",
-                    title: "Ôi, có lỗi!",
-                    description: result.error || "Không thể lưu cài đặt giao diện.",
+                    title: "Lỗi!",
+                    description: "Có lỗi xảy ra khi lưu cài đặt.",
                 });
             }
         });
@@ -244,6 +275,23 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
             setFileName(event.target.files[0].name);
         } else {
             setFileName('Chưa có tệp nào được chọn');
+        }
+    };
+
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, setFileName: React.Dispatch<React.SetStateAction<string>>, setPreview: React.Dispatch<React.SetStateAction<string | null>>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            setFileName(file.name);
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setFileName('Chưa có tệp nào được chọn');
+            setPreview(null);
         }
     };
 
@@ -333,11 +381,15 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
                             <div className="space-y-2">
                                 <Label htmlFor="logo-upload">Logo</Label>
                                 <div className="flex items-center gap-4">
-                                    <Avatar className="h-12 w-12 rounded-md">
-                                        <AvatarFallback><ImageIcon className="h-6 w-6 text-muted-foreground" /></AvatarFallback>
+                                    <Avatar className="h-16 w-16 rounded-md">
+                                        {logoPreview ? (
+                                            <img src={logoPreview} alt="Logo preview" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <AvatarFallback><ImageIcon className="h-8 w-8 text-muted-foreground" /></AvatarFallback>
+                                        )}
                                     </Avatar>
                                     <div className="flex-1">
-                                        <Input id="logo-upload" name="logo" type="file" className="hidden" onChange={(e) => handleFileChange(e, setLogoFileName)} />
+                                        <Input id="logo-upload" name="logo" type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, setLogoFileName, setLogoPreview)} />
                                         <Label htmlFor="logo-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                                             Chọn tệp
                                         </Label>
@@ -348,11 +400,15 @@ export function ChatbotConfiguration({ config, setConfig }: ChatbotConfiguration
                             <div className="space-y-2">
                                 <Label htmlFor="chatbot-icon-upload">Biểu tượng Chatbot</Label>
                                 <div className="flex items-center gap-4">
-                                     <Avatar className="h-12 w-12 rounded-full">
-                                        <AvatarFallback><Bot className="h-6 w-6 text-muted-foreground" /></AvatarFallback>
+                                     <Avatar className="h-16 w-16 rounded-full">
+                                        {chatbotIconPreview ? (
+                                            <img src={chatbotIconPreview} alt="Chatbot icon preview" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <AvatarFallback><Bot className="h-8 w-8 text-muted-foreground" /></AvatarFallback>
+                                        )}
                                     </Avatar>
                                     <div className="flex-1">
-                                        <Input id="chatbot-icon-upload" name="chatbotIcon" type="file" className="hidden" onChange={(e) => handleFileChange(e, setChatbotIconFileName)} />
+                                        <Input id="chatbot-icon-upload" name="chatbotIcon" type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, setChatbotIconFileName, setChatbotIconPreview)} />
                                         <Label htmlFor="chatbot-icon-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                                             Chọn tệp
                                         </Label>

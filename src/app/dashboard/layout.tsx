@@ -1,40 +1,58 @@
 'use client';
+
 import * as React from 'react';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { AdminSidebar } from '@/components/admin-sidebar';
+import { AppHeader } from '@/components/app-header';
+import { AdminAccessDenied } from '@/components/admin-access-denied';
+import { isAdmin } from '@/middleware/admin-auth';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isUserLoading, role } = useUser();
+  const { user, loading } = useUser();
   const router = useRouter();
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // If loading is finished...
-    if (!isUserLoading) {
-      // ...and there's no user, or the user is not an admin, redirect to login.
-      if (!user || role !== 'admin') {
-        router.push('/login');
-      }
-    }
-  }, [user, isUserLoading, role, router]);
+    setMounted(true);
+  }, []);
 
-  // While checking for auth state and role, or if user is not an admin, show a loader.
-  if (isUserLoading || !user || role !== 'admin') {
+  React.useEffect(() => {
+    if (!loading && !user && mounted) {
+      router.push('/login');
+    }
+  }, [user, loading, router, mounted]);
+
+  if (loading || !mounted) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
-  // If we have an admin user, render the full dashboard.
+  if (!user) {
+    return null;
+  }
+
+  if (!isAdmin(user)) {
+    return <AdminAccessDenied />;
+  }
+
   return (
-      <div className="min-h-screen w-full">
-        {children}
+    <SidebarProvider>
+      <div className="flex h-screen overflow-hidden">
+        <AdminSidebar />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
+    </SidebarProvider>
   );
 }

@@ -13,8 +13,9 @@ export function CustomLogo({ className = "h-6 w-6" }: { className?: string }) {
       try {
         const config = await getAppearanceConfig();
         setPrimaryColor(config.primaryColor);
-        // Logo URL would be stored in config if uploaded
-        // For now, we'll use the default icon with custom color
+        if (config.logoUrl) {
+          setLogoUrl(config.logoUrl);
+        }
       } catch (error) {
         console.error('Error loading logo:', error);
       }

@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, BookOpen, Search, Files, HelpCircle } from 'lucide-react';
+import { Plus, Search, Files, HelpCircle, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CustomLogo } from './custom-logo';
 
@@ -29,19 +29,19 @@ export function ChatSidebar() {
           <Button
             variant="ghost"
             className="w-full justify-start gap-2"
-            onClick={() => router.push('/chat')}
+            onClick={() => router.push('/lookup')}
           >
-            <BookOpen className="h-4 w-4" />
-            Văn bản Pháp Luật
+            <Search className="h-4 w-4" />
+            Tra cứu Văn bản
           </Button>
           
           <Button
             variant="ghost"
             className="w-full justify-start gap-2"
-            onClick={() => router.push('/lookup')}
+            onClick={() => router.push('/ai-consultant')}
           >
-            <Search className="h-4 w-4" />
-            Tra cứu Văn bản
+            <Sparkles className="h-4 w-4" />
+            Tư vấn AI chuyên sâu
           </Button>
           
           <Button

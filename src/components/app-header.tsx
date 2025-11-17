@@ -29,14 +29,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-sm">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <button 
-          onClick={() => router.push('/chat')}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        >
-          <CustomLogo className="w-6 h-6" />
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-        </button>
+        <SidebarTrigger />
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -15,6 +15,8 @@ const AppearanceConfigSchema = z.object({
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  logoUrl: z.string().optional(),
+  chatbotIconUrl: z.string().optional(),
 });
 
 export type AppearanceConfig = z.infer<typeof AppearanceConfigSchema>;
@@ -34,6 +36,8 @@ async function readData(): Promise<AppearanceConfig> {
         primaryColor: '#2563EB',
         accentColor: '#FBBF24',
         backgroundColor: '#F3F4F6',
+        logoUrl: undefined,
+        chatbotIconUrl: undefined,
       };
       await writeData(defaultConfig);
       return defaultConfig;

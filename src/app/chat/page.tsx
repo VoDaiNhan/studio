@@ -39,14 +39,62 @@ function SubmitButton({ primaryColor }: { primaryColor?: string }) {
   );
 }
 
-function MicrophoneButton({ accentColor }: { accentColor?: string }) {
+function MicrophoneButton({ accentColor, onTranscript }: { accentColor?: string, onTranscript: (text: string) => void }) {
+    const [isListening, setIsListening] = useState(false);
+    const [recognition, setRecognition] = useState<any>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognitionInstance = new SpeechRecognition();
+                recognitionInstance.continuous = false;
+                recognitionInstance.interimResults = false;
+                recognitionInstance.lang = 'vi-VN';
+
+                recognitionInstance.onresult = (event: any) => {
+                    const transcript = event.results[0][0].transcript;
+                    onTranscript(transcript);
+                    setIsListening(false);
+                };
+
+                recognitionInstance.onerror = (event: any) => {
+                    console.error('Speech recognition error:', event.error);
+                    setIsListening(false);
+                };
+
+                recognitionInstance.onend = () => {
+                    setIsListening(false);
+                };
+
+                setRecognition(recognitionInstance);
+            }
+        }
+    }, [onTranscript]);
+
+    const toggleListening = () => {
+        if (!recognition) {
+            alert('Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói');
+            return;
+        }
+
+        if (isListening) {
+            recognition.stop();
+            setIsListening(false);
+        } else {
+            recognition.start();
+            setIsListening(true);
+        }
+    };
+
     return (
         <Button 
           size="icon" 
           type="button" 
           variant="ghost" 
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
-          style={{ color: accentColor || '#06B6D4' }}
+          onClick={toggleListening}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full ${isListening ? 'animate-pulse' : ''}`}
+          style={{ color: isListening ? '#EF4444' : (accentColor || '#06B6D4') }}
         >
             <Mic className="h-5 w-5" />
         </Button>
@@ -98,6 +146,13 @@ export default function ChatPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const { user } = useUser();
+
+  const handleVoiceTranscript = (transcript: string) => {
+    setQuery(transcript);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
 
   // Load appearance config
   useEffect(() => {
@@ -299,8 +354,9 @@ export default function ChatPage() {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center">
-                                                    <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+                                                <div className="flex items-center gap-2">
+                                                    <Loader2 className="h-4 w-4 animate-spin" style={{ color: config?.primaryColor || '#3B82F6' }} />
+                                                    <span className="text-gray-500">Đang phân tích...</span>
                                                 </div>
                                             )}
                                         </div>
@@ -335,7 +391,7 @@ export default function ChatPage() {
                             <div className="absolute right-24 top-1/2 -translate-y-1/2 text-sm text-gray-400">
                                 {query.length}/2000
                             </div>
-                            <MicrophoneButton accentColor={config?.accentColor} />
+                            <MicrophoneButton accentColor={config?.accentColor} onTranscript={handleVoiceTranscript} />
                             <SubmitButton primaryColor={config?.primaryColor} />
                         </form>
                         <p className="text-xs text-center text-gray-400 mt-3">

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatSidebar } from '@/app/chat/components/chat-sidebar';
+import { ChatSidebar } from '@/components/chat-sidebar';
+import { ChatHeader } from '@/components/chat-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -246,21 +247,82 @@ export default function TemplatesPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleDownload = (template: Template) => {
-    const blob = new Blob([template.content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${template.title}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownload = async (template: Template) => {
+    try {
+      const { Document, Paragraph, TextRun, AlignmentType, HeadingLevel } = await import('docx');
+      const { saveAs } = await import('file-saver');
+
+      // Split content into lines
+      const lines = template.content.split('\n');
+      
+      // Create paragraphs from content
+      const paragraphs = lines.map(line => {
+        const trimmedLine = line.trim();
+        
+        // Check if it's a heading
+        if (trimmedLine.includes('CỘNG HÒA') || trimmedLine.includes('ĐƠN') || trimmedLine.includes('HỢP ĐỒNG') || trimmedLine.includes('GIẤY')) {
+          return new Paragraph({
+            text: trimmedLine,
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 }
+          });
+        }
+        
+        // Check if it's a separator
+        if (trimmedLine === '---------------') {
+          return new Paragraph({
+            text: '_______________',
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 }
+          });
+        }
+        
+        // Check if it's a section heading (ĐIỀU, BÊN, etc.)
+        if (trimmedLine.startsWith('ĐIỀU') || trimmedLine.startsWith('BÊN') || trimmedLine.includes(':')) {
+          return new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmedLine,
+                bold: true
+              })
+            ],
+            spacing: { before: 200, after: 100 }
+          });
+        }
+        
+        // Regular paragraph
+        return new Paragraph({
+          text: trimmedLine,
+          spacing: { after: 100 }
+        });
+      });
+
+      // Create document
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: paragraphs
+        }]
+      });
+
+      // Generate and save
+      const blob = await import('docx').then(m => m.Packer.toBlob(doc));
+      saveAs(blob, `${template.title}.docx`);
+    } catch (error) {
+      console.error('Error creating document:', error);
+      alert('Có lỗi khi tạo file Word. Vui lòng thử lại.');
+    }
   };
 
   return (
     <div className="flex h-screen bg-gray-50">
       <ChatSidebar />
       
-      <main className="flex-1 overflow-auto">
+      <div className="flex-1 flex flex-col">
+        <ChatHeader />
+        
+        <main className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Mẫu đơn pháp lý</h1>
@@ -348,6 +410,7 @@ export default function TemplatesPage() {
           )}
         </div>
       </main>
+      </div>
     </div>
   );
 }
