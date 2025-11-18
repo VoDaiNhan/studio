@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useState, useRef, useEffect } from 'react';
 import { getLawSummary, type LawSummaryState } from '@/app/actions';
 import { getAppearanceConfig, type AppearanceConfig } from '@/app/actions/appearance';
 import { useUser, initializeFirebase } from '@/firebase';
@@ -9,7 +8,7 @@ import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Send, User, Loader2, Mic, History } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -24,17 +23,17 @@ interface Message {
   sourceArticles?: string;
 }
 
-function SubmitButton({ primaryColor }: { primaryColor?: string }) {
-  const { pending } = useFormStatus();
+function SubmitButton({ primaryColor, isLoading, onClick }: { primaryColor?: string, isLoading: boolean, onClick: () => void }) {
   return (
     <Button 
       size="icon" 
-      type="submit" 
-      disabled={pending} 
-      className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-white"
+      type="button"
+      onClick={onClick}
+      disabled={isLoading} 
+      className="h-10 w-10 rounded-full text-white flex-shrink-0"
       style={{ backgroundColor: primaryColor || '#06B6D4' }}
     >
-      {pending ? <Loader2 className="animate-spin" /> : <Send className="h-4 w-4" />}
+      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
     </Button>
   );
 }
@@ -93,7 +92,7 @@ function MicrophoneButton({ accentColor, onTranscript }: { accentColor?: string,
           type="button" 
           variant="ghost" 
           onClick={toggleListening}
-          className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full ${isListening ? 'animate-pulse' : ''}`}
+          className={`h-10 w-10 rounded-full flex-shrink-0 ${isListening ? 'animate-pulse' : ''}`}
           style={{ color: isListening ? '#EF4444' : (accentColor || '#06B6D4') }}
         >
             <Mic className="h-5 w-5" />
@@ -141,16 +140,15 @@ export default function ChatPage() {
   const [query, setQuery] = useState('');
   const [recentHistory, setRecentHistory] = useState<Array<{id: string, text: string, summary?: string, sourceArticles?: string}>>([]);
   const [config, setConfig] = useState<AppearanceConfig | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [isPending, startTransition] = useTransition();
   const { user } = useUser();
 
   const handleVoiceTranscript = (transcript: string) => {
     setQuery(transcript);
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
   };
 
@@ -181,7 +179,7 @@ export default function ChatPage() {
              viewport.scrollTop = viewport.scrollHeight;
         }
     }
-  }, [messages, isPending]);
+  }, [messages, isLoading]);
 
   useEffect(() => {
     const loadRecentHistory = async () => {
@@ -222,23 +220,28 @@ export default function ChatPage() {
     loadRecentHistory();
   }, [user]);
 
-  const handleFormSubmit = async (formData: FormData) => {
-    const currentQuery = formData.get('query') as string;
-    if (!currentQuery?.trim()) return;
+  const handleSubmit = async () => {
+    const currentQuery = query.trim();
+    if (!currentQuery || isLoading) return;
 
     const userId = user?.uid || 'anonymous';
-    formData.set('userId', userId);
 
     const userMessage: Message = { id: Date.now(), role: 'user', content: currentQuery };
     const botMessage: Message = { id: Date.now() + 1, role: 'assistant', content: '' };
     
     setMessages((prev) => [...prev, userMessage, botMessage]);
-    
-    formRef.current?.reset();
-    inputRef.current?.focus();
     setQuery('');
+    setIsLoading(true);
+    
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
 
-    startTransition(async () => {
+    try {
+      const formData = new FormData();
+      formData.set('query', currentQuery);
+      formData.set('userId', userId);
+      
       const result = await getLawSummary({ query: currentQuery, userId }, formData);
       
       let finalBotMessage: Message;
@@ -277,7 +280,16 @@ export default function ChatPage() {
       setMessages((prev) => 
         prev.map(msg => msg.id === botMessage.id ? finalBotMessage : msg)
       );
-    });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
   };
 
   const loadConversation = (historyItem: {id: string, text: string, summary?: string, sourceArticles?: string}) => {
@@ -308,7 +320,7 @@ export default function ChatPage() {
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full" ref={scrollAreaRef}>
                         <div className="p-4 flex flex-col gap-4">
-                            {messages.length === 0 && !isPending ? (
+                            {messages.length === 0 && !isLoading ? (
                                 <div className='flex flex-col items-center justify-center text-center h-full pt-20'>
                                     <AiLogo />
                                     <h2 className="text-2xl font-semibold mt-6 text-gray-700">
@@ -373,27 +385,26 @@ export default function ChatPage() {
                 </div>
                 <div className="p-4 w-full mx-auto flex-shrink-0">
                     <div className='bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200'>
-                        <form 
-                            ref={formRef} 
-                            action={handleFormSubmit}
-                            className="relative"
-                        >
-                            <Input 
-                                ref={inputRef} 
-                                name="query" 
-                                placeholder="Nhập câu hỏi của bạn tại đây..." 
-                                className="pr-24 h-12 text-base rounded-lg border-gray-300 focus:ring-cyan-400 focus:border-cyan-400" 
-                                disabled={isPending}
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                maxLength={2000}
-                            />
-                            <div className="absolute right-24 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                                {query.length}/2000
+                        <div className="flex gap-3 items-end">
+                            <div className="flex-1 relative">
+                                <Textarea 
+                                    ref={textareaRef} 
+                                    placeholder="Nhập câu hỏi của bạn tại đây... (Enter để gửi, Shift+Enter để xuống dòng)" 
+                                    className="min-h-[60px] max-h-[200px] text-base rounded-lg border-gray-300 focus:ring-cyan-400 focus:border-cyan-400 resize-none pr-3" 
+                                    disabled={isLoading}
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    maxLength={2000}
+                                    rows={2}
+                                />
+                                <div className="absolute right-3 bottom-2 text-xs text-gray-400">
+                                    {query.length}/2000
+                                </div>
                             </div>
                             <MicrophoneButton accentColor={config?.accentColor} onTranscript={handleVoiceTranscript} />
-                            <SubmitButton primaryColor={config?.primaryColor} />
-                        </form>
+                            <SubmitButton primaryColor={config?.primaryColor} isLoading={isLoading} onClick={handleSubmit} />
+                        </div>
                         <p className="text-xs text-center text-gray-400 mt-3">
                             Thông tin được tạo ra bằng AI. Hãy luôn cẩn trọng và sử dụng thông tin AI một cách có trách nhiệm.
                         </p>

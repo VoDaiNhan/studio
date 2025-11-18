@@ -3,9 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AdminSidebar } from '@/components/admin-sidebar';
-import { AppHeader } from '@/components/app-header';
 import { AdminAccessDenied } from '@/components/admin-access-denied';
 import { isAdmin } from '@/middleware/admin-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,9 +12,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Save, Sparkles, History } from 'lucide-react';
+import { Loader2, Save, Sparkles, History, Eye } from 'lucide-react';
 import { getAppearanceConfig, updateAppearanceConfig, type AppearanceConfig } from '@/app/actions/appearance';
 import { useToast } from '@/hooks/use-toast';
+import { ChatPreview } from '@/components/chat-preview';
 
 export default function ChatbotConfigPage() {
   const { user, loading: authLoading } = useUser();
@@ -101,13 +99,11 @@ export default function ChatbotConfigPage() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen overflow-hidden">
-        <AdminSidebar />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <AppHeader />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-6">
+    <div className="h-full overflow-y-auto">
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left side - Configuration */}
+          <div className="lg:col-span-2 space-y-6">
               <div>
                 <h1 className="text-3xl font-bold">Cấu hình Chatbot</h1>
                 <p className="text-muted-foreground mt-1">
@@ -116,14 +112,18 @@ export default function ChatbotConfigPage() {
               </div>
 
               <Tabs defaultValue="interface" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="interface">
                     <Sparkles className="h-4 w-4 mr-2" />
                     Giao diện
                   </TabsTrigger>
                   <TabsTrigger value="behavior">
-                    <History className="h-4 w-4 mr-2" />
-                    Kiến thức
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Hành vi
+                  </TabsTrigger>
+                  <TabsTrigger value="model">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    AI Model
                   </TabsTrigger>
                   <TabsTrigger value="history">
                     <History className="h-4 w-4 mr-2" />
@@ -248,14 +248,284 @@ export default function ChatbotConfigPage() {
                 <TabsContent value="behavior" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Kiến thức</CardTitle>
+                      <CardTitle>Hành vi & Phản hồi</CardTitle>
                       <CardDescription>
-                        Quản lý nguồn kiến thức và cách chatbot trả lời
+                        Cấu hình cách chatbot xử lý và trả lời câu hỏi
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>Tính năng quản lý kiến thức sẽ được thêm vào phần "Quản lý Kiến thức"</p>
+                      <div className="space-y-2">
+                        <Label htmlFor="maxTokens">Độ dài câu trả lời tối đa</Label>
+                        <Input
+                          id="maxTokens"
+                          type="number"
+                          placeholder="1000"
+                          defaultValue="1000"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Số token tối đa cho mỗi câu trả lời (1 token ≈ 4 ký tự)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="temperature">Mức độ sáng tạo (Temperature)</Label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            id="temperature"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            defaultValue="0.3"
+                            className="flex-1"
+                          />
+                          <span className="text-sm font-medium w-12">0.3</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          0 = Chính xác, 1 = Sáng tạo. Khuyến nghị: 0.3 cho luật pháp
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="responseStyle">Phong cách trả lời</Label>
+                        <Select defaultValue="concise">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="concise">Ngắn gọn (2-3 đoạn)</SelectItem>
+                            <SelectItem value="detailed">Chi tiết (4-5 đoạn)</SelectItem>
+                            <SelectItem value="comprehensive">Toàn diện (6+ đoạn)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="citeSources">Trích dẫn nguồn</Label>
+                        <Select defaultValue="always">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="always">Luôn luôn</SelectItem>
+                            <SelectItem value="when-available">Khi có sẵn</SelectItem>
+                            <SelectItem value="never">Không bao giờ</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="fallbackMessage">Tin nhắn dự phòng</Label>
+                        <Textarea
+                          id="fallbackMessage"
+                          placeholder="Xin lỗi, tôi không tìm thấy thông tin liên quan. Vui lòng thử câu hỏi khác."
+                          rows={3}
+                          defaultValue="Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn. Vui lòng thử đặt câu hỏi cụ thể hơn hoặc sử dụng từ khóa khác."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Tin nhắn hiển thị khi không tìm thấy câu trả lời
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Giới hạn & Bảo mật</CardTitle>
+                      <CardDescription>
+                        Cấu hình giới hạn sử dụng và bảo mật
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="rateLimit">Giới hạn số câu hỏi/phút</Label>
+                        <Input
+                          id="rateLimit"
+                          type="number"
+                          placeholder="10"
+                          defaultValue="10"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Số câu hỏi tối đa mỗi người dùng có thể hỏi trong 1 phút
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="maxQueryLength">Độ dài câu hỏi tối đa</Label>
+                        <Input
+                          id="maxQueryLength"
+                          type="number"
+                          placeholder="2000"
+                          defaultValue="2000"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Số ký tự tối đa cho mỗi câu hỏi
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="contentFilter">Lọc nội dung</Label>
+                        <Select defaultValue="moderate">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="strict">Nghiêm ngặt</SelectItem>
+                            <SelectItem value="moderate">Trung bình</SelectItem>
+                            <SelectItem value="permissive">Thoải mái</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Mức độ lọc nội dung không phù hợp
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="model" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Cấu hình AI Model</CardTitle>
+                      <CardDescription>
+                        Chọn và cấu hình model AI cho chatbot
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="aiProvider">Nhà cung cấp AI</Label>
+                        <Select defaultValue="google">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="google">Google AI (Gemini)</SelectItem>
+                            <SelectItem value="openai">OpenAI (GPT)</SelectItem>
+                            <SelectItem value="both">Cả hai (Google ưu tiên)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="googleModel">Google AI Model</Label>
+                        <Select defaultValue="gemini-2.5-flash">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash (Khuyến nghị)</SelectItem>
+                            <SelectItem value="gemini-2.0-flash">Gemini 2.0 Flash</SelectItem>
+                            <SelectItem value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</SelectItem>
+                            <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                            <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                            <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Model được sử dụng khi chọn Google AI
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="openaiModel">OpenAI Model</Label>
+                        <Select defaultValue="gpt-4o-mini">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                            <SelectItem value="gpt-4o-mini">GPT-4o Mini (Khuyến nghị)</SelectItem>
+                            <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                            <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Model được sử dụng khi chọn OpenAI
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="googleApiKey">Google API Key</Label>
+                        <Input
+                          id="googleApiKey"
+                          type="password"
+                          placeholder="AIzaSy..."
+                          defaultValue="••••••••••••••••"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          API key cho Google AI. Để trống nếu không thay đổi.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="openaiApiKey">OpenAI API Key</Label>
+                        <Input
+                          id="openaiApiKey"
+                          type="password"
+                          placeholder="sk-proj-..."
+                          defaultValue="••••••••••••••••"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          API key cho OpenAI. Để trống nếu không thay đổi.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="font-semibold text-sm mb-2 text-blue-900">💡 Gợi ý</h4>
+                        <ul className="text-xs text-blue-800 space-y-1">
+                          <li>• <strong>Gemini 2.5 Flash</strong>: Nhanh, chính xác, chi phí thấp (khuyến nghị)</li>
+                          <li>• <strong>Gemini 2.5 Pro</strong>: Mạnh nhất, phù hợp câu hỏi phức tạp</li>
+                          <li>• <strong>GPT-4o Mini</strong>: Cân bằng giữa chất lượng và chi phí</li>
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Tối ưu hóa</CardTitle>
+                      <CardDescription>
+                        Cấu hình để tối ưu hiệu suất và chi phí
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cacheEnabled">Bật cache kết quả</Label>
+                        <Select defaultValue="enabled">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="enabled">Bật (Khuyến nghị)</SelectItem>
+                            <SelectItem value="disabled">Tắt</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Cache câu trả lời cho câu hỏi tương tự để giảm chi phí
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="cacheDuration">Thời gian cache (phút)</Label>
+                        <Input
+                          id="cacheDuration"
+                          type="number"
+                          placeholder="60"
+                          defaultValue="60"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="maxDocuments">Số tài liệu tối đa</Label>
+                        <Input
+                          id="maxDocuments"
+                          type="number"
+                          placeholder="3"
+                          defaultValue="3"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Số tài liệu liên quan tối đa được gửi cho AI (1-5)
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -264,14 +534,28 @@ export default function ChatbotConfigPage() {
                 <TabsContent value="history" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Lịch sử</CardTitle>
+                      <CardTitle>Lịch sử thay đổi</CardTitle>
                       <CardDescription>
-                        Xem lịch sử thay đổi cấu hình
+                        Xem lịch sử các thay đổi cấu hình
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>Lịch sử cấu hình sẽ được hiển thị ở đây</p>
+                      <div className="space-y-3">
+                        {[
+                          { date: '2024-01-15 14:30', user: 'Admin', change: 'Thay đổi màu chính thành #2563EB' },
+                          { date: '2024-01-14 10:20', user: 'Admin', change: 'Cập nhật lời chào mặc định' },
+                          { date: '2024-01-13 16:45', user: 'Admin', change: 'Chuyển sang Google AI Gemini 2.5 Flash' },
+                        ].map((item, index) => (
+                          <div key={index} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{item.change}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {item.user} • {item.date}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -293,10 +577,25 @@ export default function ChatbotConfigPage() {
                   )}
                 </Button>
               </div>
+          </div>
+
+          {/* Right side - Preview */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                <h2 className="text-lg font-semibold">Xem trước</h2>
+              </div>
+              <div className="h-[600px]">
+                <ChatPreview config={config} />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Thay đổi sẽ được hiển thị ngay lập tức
+              </p>
             </div>
-          </main>
+          </div>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }

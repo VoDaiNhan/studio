@@ -13,7 +13,16 @@ if (openaiKey) {
 }
 
 export async function generateText(prompt: string, systemInstruction?: string): Promise<string> {
-  // Try OpenAI first
+  // Try Google AI first
+  if (googleKey) {
+    try {
+      return await googleAI.generateText(prompt, systemInstruction);
+    } catch (error) {
+      console.error('Google AI error, falling back to OpenAI:', error);
+    }
+  }
+
+  // Fallback to OpenAI
   if (openai) {
     try {
       const messages: any[] = [];
@@ -37,13 +46,9 @@ export async function generateText(prompt: string, systemInstruction?: string): 
 
       return completion.choices[0].message.content || '';
     } catch (error) {
-      console.error('OpenAI error, falling back to Google AI:', error);
+      console.error('OpenAI error:', error);
+      throw error;
     }
-  }
-
-  // Fallback to Google AI
-  if (googleKey) {
-    return await googleAI.generateText(prompt, systemInstruction);
   }
 
   throw new Error('No API key available for OpenAI or Google AI');
@@ -54,7 +59,16 @@ export async function generateStructuredOutput<T>(
   schema: any,
   systemInstruction?: string
 ): Promise<T> {
-  // Try OpenAI first
+  // Try Google AI first
+  if (googleKey) {
+    try {
+      return await googleAI.generateStructuredOutput<T>(prompt, schema, systemInstruction);
+    } catch (error) {
+      console.error('Google AI error, falling back to OpenAI:', error);
+    }
+  }
+
+  // Fallback to OpenAI
   if (openai) {
     try {
       const messages: any[] = [];
@@ -82,13 +96,9 @@ export async function generateStructuredOutput<T>(
       const text = completion.choices[0].message.content || '{}';
       return JSON.parse(text) as T;
     } catch (error) {
-      console.error('OpenAI error, falling back to Google AI:', error);
+      console.error('OpenAI error:', error);
+      throw error;
     }
-  }
-
-  // Fallback to Google AI
-  if (googleKey) {
-    return await googleAI.generateStructuredOutput<T>(prompt, schema, systemInstruction);
   }
 
   throw new Error('No API key available for OpenAI or Google AI');

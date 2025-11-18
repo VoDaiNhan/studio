@@ -10,16 +10,14 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 // Try different model names based on what's available
 const MODEL_NAMES = [
-  'models/gemini-1.5-flash',
-  'models/gemini-1.5-pro',
-  'models/gemini-pro',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro-latest', 
-  'gemini-1.5-pro',
-  'gemini-pro',
-  'gemini-1.5-flash-8b-latest',
-  'gemini-2.0-flash-exp'
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash-tts',
+  'models/gemini-2.5-flash',
+  'models/gemini-2.0-flash'
 ];
 
 async function getWorkingModel(withSchema: boolean = false) {

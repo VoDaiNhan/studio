@@ -126,5 +126,14 @@
     "url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2023/7/12-bgtvt.signed.pdf",
     "effectiveDate": "2023-06-28T17:00:00.000Z",
     "status": "active"
+  },
+  {
+    "id": "1763479661726",
+    "title": "54464",
+    "type": "file",
+    "url": "",
+    "content": "[PDF File: 22CT112_VoDaiNhan_122000644.pdf]\n\nĐể xử lý file PDF, cần cài đặt thư viện:\nnpm install pdf-parse\n\nSau đó cập nhật hàm này để trích xuất text từ PDF.",
+    "effectiveDate": "2025-11-18",
+    "status": "active"
   }
 ]

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ChatSidebar } from '@/components/chat-sidebar';
-import { ChatHeader } from '@/components/chat-header';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -128,13 +127,12 @@ export default function AIConsultantPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <ChatSidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <ChatHeader />
+    <div className="h-full flex flex-col">
+      <div className="flex-1 flex overflow-hidden">
+        <ChatSidebar />
         
-        <main className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col bg-gray-50">
+          <main className="flex-1 overflow-hidden flex flex-col">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6">
             <div className="max-w-4xl mx-auto">
@@ -262,6 +260,7 @@ export default function AIConsultantPage() {
             </div>
           </div>
         </main>
+        </div>
       </div>
     </div>
   );

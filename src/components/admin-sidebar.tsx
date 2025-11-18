@@ -31,7 +31,7 @@ const menuItems = [
   },
   {
     title: 'Cấu hình Chatbot',
-    url: '/dashboard/config',
+    url: '/dashboard/chatbot',
     icon: Settings,
   },
   {

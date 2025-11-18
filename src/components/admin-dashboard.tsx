@@ -1,57 +1,198 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Users, Clock, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, Users, Clock, TrendingUp, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { initializeFirebase } from '@/firebase';
+import { collection, query, getDocs, orderBy, limit, where, Timestamp } from 'firebase/firestore';
 
-const statsData = [
-  {
-    title: 'Tổng câu hỏi',
-    value: '1,234',
-    change: '+20.1%',
-    icon: MessageSquare,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50',
-  },
-  {
-    title: 'Tỷ lệ thành công',
-    value: '95.2%',
-    change: 'Câu trả lời chính xác',
-    icon: CheckCircle,
-    color: 'text-green-500',
-    bgColor: 'bg-green-50',
-  },
-  {
-    title: 'Thời gian TB',
-    value: '2.3s',
-    change: '-0.5s cải thiện',
-    icon: Clock,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-50',
-  },
-  {
-    title: 'Người dùng',
-    value: '156',
-    change: 'Đang hoạt động',
-    icon: Users,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-50',
-  },
-];
+interface DashboardStats {
+  totalQueries: number;
+  totalUsers: number;
+  avgResponseTime: number;
+  successRate: number;
+}
 
-const chartData = [
-  { name: 'T2', queries: 65 },
-  { name: 'T3', queries: 78 },
-  { name: 'T4', queries: 90 },
-  { name: 'T5', queries: 81 },
-  { name: 'T6', queries: 95 },
-  { name: 'T7', queries: 72 },
-  { name: 'CN', queries: 58 },
-];
+interface ChartDataPoint {
+  name: string;
+  queries: number;
+}
+
+interface Activity {
+  type: 'success' | 'info' | 'warning';
+  message: string;
+  time: string;
+}
 
 export function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalQueries: 0,
+    totalUsers: 0,
+    avgResponseTime: 0,
+    successRate: 0,
+  });
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const { firestore } = initializeFirebase();
+      
+      // Get all users
+      const usersSnapshot = await getDocs(collection(firestore, 'users'));
+      const totalUsers = usersSnapshot.size;
+      
+      // Get all conversations from all users
+      let totalQueries = 0;
+      let successfulQueries = 0;
+      const last7Days: { [key: string]: number } = {};
+      const recentActivities: Activity[] = [];
+      
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      // Initialize last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dayName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][date.getDay()];
+        last7Days[dayName] = 0;
+      }
+      
+      // Iterate through all users to get their conversations
+      for (const userDoc of usersSnapshot.docs) {
+        const conversationsRef = collection(firestore, 'users', userDoc.id, 'conversations');
+        const conversationsSnapshot = await getDocs(conversationsRef);
+        
+        conversationsSnapshot.forEach((convDoc) => {
+          const data = convDoc.data();
+          totalQueries++;
+          
+          if (data.botSummary && data.botSummary.length > 0) {
+            successfulQueries++;
+          }
+          
+          // Count queries in last 7 days
+          if (data.timestamp) {
+            const convDate = data.timestamp.toDate();
+            if (convDate >= sevenDaysAgo) {
+              const dayName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][convDate.getDay()];
+              if (last7Days[dayName] !== undefined) {
+                last7Days[dayName]++;
+              }
+            }
+          }
+        });
+      }
+      
+      // Calculate success rate
+      const successRate = totalQueries > 0 ? (successfulQueries / totalQueries) * 100 : 0;
+      
+      // Prepare chart data
+      const chartDataArray: ChartDataPoint[] = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => ({
+        name: day,
+        queries: last7Days[day] || 0,
+      }));
+      
+      // Generate recent activities
+      const newActivities: Activity[] = [];
+      
+      if (totalQueries > 0) {
+        newActivities.push({
+          type: 'success',
+          message: `Chatbot đã trả lời ${totalQueries} câu hỏi`,
+          time: 'Hôm nay',
+        });
+      }
+      
+      if (totalUsers > 0) {
+        newActivities.push({
+          type: 'info',
+          message: `Có ${totalUsers} người dùng đã đăng ký`,
+          time: 'Tổng cộng',
+        });
+      }
+      
+      if (successRate >= 90) {
+        newActivities.push({
+          type: 'success',
+          message: `Tỷ lệ thành công đạt ${successRate.toFixed(1)}%`,
+          time: 'Hiện tại',
+        });
+      } else if (successRate < 80) {
+        newActivities.push({
+          type: 'warning',
+          message: `Tỷ lệ thành công chỉ ${successRate.toFixed(1)}%`,
+          time: 'Cần cải thiện',
+        });
+      }
+      
+      setStats({
+        totalQueries,
+        totalUsers,
+        avgResponseTime: 2.3, // This would need actual timing data
+        successRate,
+      });
+      
+      setChartData(chartDataArray);
+      setActivities(newActivities);
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const statsData = [
+    {
+      title: 'Tổng câu hỏi',
+      value: stats.totalQueries.toLocaleString(),
+      change: `${stats.totalQueries} câu hỏi`,
+      icon: MessageSquare,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      title: 'Tỷ lệ thành công',
+      value: `${stats.successRate.toFixed(1)}%`,
+      change: 'Câu trả lời chính xác',
+      icon: CheckCircle,
+      color: 'text-green-500',
+      bgColor: 'bg-green-50',
+    },
+    {
+      title: 'Thời gian TB',
+      value: `${stats.avgResponseTime}s`,
+      change: 'Thời gian phản hồi',
+      icon: Clock,
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-50',
+    },
+    {
+      title: 'Người dùng',
+      value: stats.totalUsers.toLocaleString(),
+      change: 'Đã đăng ký',
+      icon: Users,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-50',
+    },
+  ];
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="h-full overflow-y-auto">
       <div className="p-8 space-y-8">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -140,11 +281,10 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { type: 'success', message: 'Chatbot đã trả lời 50 câu hỏi thành công', time: '5 phút trước' },
-                { type: 'info', message: 'Có 3 người dùng mới đăng ký', time: '15 phút trước' },
-                { type: 'warning', message: 'Thời gian phản hồi tăng nhẹ', time: '1 giờ trước' },
-              ].map((activity, index) => (
+              {activities.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Chưa có hoạt động nào</p>
+              ) : (
+                activities.map((activity, index) => (
                 <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 hover:bg-muted/30 -mx-2 px-2 py-2 rounded-lg transition-colors">
                   <div className={`p-2.5 rounded-xl shadow-sm ${
                     activity.type === 'success' ? 'bg-green-100' :
@@ -163,7 +303,8 @@ export function AdminDashboard() {
                     <p className="text-xs text-muted-foreground">{activity.time}</p>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </CardContent>
         </Card>
