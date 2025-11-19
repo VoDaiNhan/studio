@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HelpCircle, MessageSquare, Book, Video, Mail, Phone, Search } from 'lucide-react';
 import { useState } from 'react';
+import { ChatSidebar } from '@/components/chat-sidebar';
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,41 +55,46 @@ export default function HelpPage() {
   );
 
   return (
-    <div className="h-full pb-8">
-      <ScrollArea className="h-full">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <HelpCircle className="h-8 w-8 text-primary" />
-              Trung tâm trợ giúp
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Tìm câu trả lời cho các câu hỏi thường gặp và nhận hỗ trợ
-            </p>
-          </div>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <ChatSidebar />
+        
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 max-w-5xl">
+            <div className="mb-6 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                <HelpCircle className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                Trung tâm trợ giúp
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground mt-2">
+                Tìm câu trả lời cho các câu hỏi thường gặp và nhận hỗ trợ
+              </p>
+            </div>
 
-          <Tabs defaultValue="faq" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="faq">
-                <Book className="h-4 w-4 mr-2" />
-                FAQ
-              </TabsTrigger>
-              <TabsTrigger value="guides">
-                <Video className="h-4 w-4 mr-2" />
-                Hướng dẫn
-              </TabsTrigger>
-              <TabsTrigger value="contact">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Liên hệ
-              </TabsTrigger>
-              <TabsTrigger value="resources">
-                <Book className="h-4 w-4 mr-2" />
-                Tài liệu
-              </TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="faq" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                <TabsTrigger value="faq" className="text-xs md:text-sm">
+                  <Book className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  FAQ
+                </TabsTrigger>
+                <TabsTrigger value="guides" className="text-xs md:text-sm">
+                  <Video className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  Hướng dẫn
+                </TabsTrigger>
+                <TabsTrigger value="contact" className="text-xs md:text-sm">
+                  <MessageSquare className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  Liên hệ
+                </TabsTrigger>
+                <TabsTrigger value="resources" className="text-xs md:text-sm">
+                  <Book className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  Tài liệu
+                </TabsTrigger>
+              </TabsList>
 
-            {/* FAQ Tab */}
-            <TabsContent value="faq">
+              {/* FAQ Tab */}
+              <TabsContent value="faq">
               <Card>
                 <CardHeader>
                   <CardTitle>Câu hỏi thường gặp</CardTitle>
@@ -127,9 +133,9 @@ export default function HelpPage() {
               </Card>
             </TabsContent>
 
-            {/* Guides Tab */}
-            <TabsContent value="guides">
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* Guides Tab */}
+              <TabsContent value="guides">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="text-lg">Bắt đầu nhanh</CardTitle>
@@ -200,9 +206,9 @@ export default function HelpPage() {
               </div>
             </TabsContent>
 
-            {/* Contact Tab */}
-            <TabsContent value="contact">
-              <div className="grid gap-6 md:grid-cols-2">
+              {/* Contact Tab */}
+              <TabsContent value="contact">
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle>Gửi yêu cầu hỗ trợ</CardTitle>
@@ -297,8 +303,8 @@ export default function HelpPage() {
               </div>
             </TabsContent>
 
-            {/* Resources Tab */}
-            <TabsContent value="resources">
+              {/* Resources Tab */}
+              <TabsContent value="resources">
               <Card>
                 <CardHeader>
                   <CardTitle>Tài liệu tham khảo</CardTitle>
@@ -352,8 +358,9 @@ export default function HelpPage() {
               </Card>
             </TabsContent>
           </Tabs>
+          </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

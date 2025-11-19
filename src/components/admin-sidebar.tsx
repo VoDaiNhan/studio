@@ -68,7 +68,7 @@ export function AdminSidebar() {
     <Sidebar className="border-r">
       <SidebarContent>
         <SidebarGroup>
-          <div className="px-4 py-4 border-b">
+          <Link href="/chat" className="px-4 py-4 border-b block hover:bg-accent transition-colors">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-primary rounded-lg">
                 <Scale className="h-5 w-5 text-primary-foreground" />
@@ -78,7 +78,7 @@ export function AdminSidebar() {
                 <p className="text-xs text-muted-foreground">Giao thông</p>
               </div>
             </div>
-          </div>
+          </Link>
           <SidebarGroupContent className="mt-2 px-2">
             <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (

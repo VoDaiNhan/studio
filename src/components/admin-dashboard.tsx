@@ -192,18 +192,18 @@ export function AdminDashboard() {
     },
   ];
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-8 space-y-8">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 w-full max-w-[100vw] box-border">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Dashboard
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
             Tổng quan về hoạt động của chatbot
           </p>
         </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {statsData.map((stat) => (
           <Card key={stat.title} className="border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -222,14 +222,14 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-bold">Câu hỏi theo ngày</CardTitle>
-            <CardDescription className="text-base">7 ngày qua</CardDescription>
+            <CardTitle className="text-base md:text-lg lg:text-xl font-bold">Câu hỏi theo ngày</CardTitle>
+            <CardDescription className="text-xs md:text-sm lg:text-base">7 ngày qua</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="name" />
@@ -250,11 +250,11 @@ export function AdminDashboard() {
 
         <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-bold">Xu hướng sử dụng</CardTitle>
-            <CardDescription className="text-base">Biểu đồ tăng trưởng</CardDescription>
+            <CardTitle className="text-base md:text-lg lg:text-xl font-bold">Xu hướng sử dụng</CardTitle>
+            <CardDescription className="text-xs md:text-sm lg:text-base">Biểu đồ tăng trưởng</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="name" />
@@ -276,8 +276,8 @@ export function AdminDashboard() {
 
         <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-bold">Hoạt động gần đây</CardTitle>
-            <CardDescription className="text-base">Các sự kiện quan trọng</CardDescription>
+            <CardTitle className="text-base md:text-lg lg:text-xl font-bold">Hoạt động gần đây</CardTitle>
+            <CardDescription className="text-xs md:text-sm lg:text-base">Các sự kiện quan trọng</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

@@ -68,20 +68,20 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="p-8 space-y-8">
-        <div className="flex items-center justify-between">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 w-full max-w-full box-border">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 md:h-8 md:w-8 text-primary" />
               Phân tích & Thống kê
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
               Phân tích chi tiết và insights cho quản trị viên
             </p>
           </div>
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Chọn khoảng thời gian" />
             </SelectTrigger>
             <SelectContent>
@@ -92,14 +92,14 @@ export default function AdminAnalyticsPage() {
           </Select>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tổng câu hỏi</CardTitle>
               <MessageSquare className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
+              <div className="text-xl md:text-2xl font-bold">1,234</div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-green-500" />
                 +20.1% so với kỳ trước
@@ -113,7 +113,7 @@ export default function AdminAnalyticsPage() {
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">95.2%</div>
+              <div className="text-xl md:text-2xl font-bold">95.2%</div>
               <p className="text-xs text-muted-foreground">
                 Câu trả lời chính xác
               </p>
@@ -126,7 +126,7 @@ export default function AdminAnalyticsPage() {
               <Clock className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2.3s</div>
+              <div className="text-xl md:text-2xl font-bold">2.3s</div>
               <p className="text-xs text-muted-foreground">
                 -0.5s cải thiện
               </p>
@@ -139,7 +139,7 @@ export default function AdminAnalyticsPage() {
               <Users className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">156</div>
+              <div className="text-xl md:text-2xl font-bold">156</div>
               <p className="text-xs text-muted-foreground">
                 Đang hoạt động
               </p>
@@ -147,14 +147,14 @@ export default function AdminAnalyticsPage() {
           </Card>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Chủ đề phổ biến</CardTitle>
-              <CardDescription>Phân bố theo chủ đề câu hỏi</CardDescription>
+              <CardTitle className="text-base md:text-lg">Chủ đề phổ biến</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Phân bố theo chủ đề câu hỏi</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
                     data={topicsData}
@@ -178,11 +178,11 @@ export default function AdminAnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Giờ cao điểm</CardTitle>
-              <CardDescription>Số lượng câu hỏi theo giờ</CardDescription>
+              <CardTitle className="text-base md:text-lg">Giờ cao điểm</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Số lượng câu hỏi theo giờ</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={timeData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />

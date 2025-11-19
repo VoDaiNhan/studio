@@ -47,11 +47,11 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden">
         <AdminSidebar />
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <AppHeader />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
             {children}
           </main>
         </div>

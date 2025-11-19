@@ -80,33 +80,34 @@ export default function LookupPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="p-8 space-y-8">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 w-full max-w-full box-border">
               <div>
-                <h1 className="text-3xl font-bold">Tra cứu Điều khoản</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="text-2xl md:text-3xl font-bold">Tra cứu Điều khoản</h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">
                   Tìm kiếm và tra cứu các điều khoản trong văn bản pháp luật
                 </p>
               </div>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Tìm kiếm</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-base md:text-lg">Tìm kiếm</CardTitle>
+                  <CardDescription className="text-xs md:text-sm">
                     Nhập từ khóa để tìm kiếm điều khoản
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       placeholder="Nhập từ khóa tìm kiếm..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      className="flex-1"
                     />
-                    <Button onClick={handleSearch}>
-                      <Search className="h-4 w-4 mr-2" />
-                      Tìm kiếm
+                    <Button onClick={handleSearch} className="w-full sm:w-auto">
+                      <Search className="h-4 w-4 sm:mr-2" />
+                      <span className="sm:inline">Tìm kiếm</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -114,32 +115,32 @@ export default function LookupPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Kết quả tìm kiếm</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-base md:text-lg">Kết quả tìm kiếm</CardTitle>
+                  <CardDescription className="text-xs md:text-sm">
                     Tìm thấy {results.length} kết quả
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-4">
+                  <ScrollArea className="h-[400px] md:h-[500px]">
+                    <div className="space-y-3 md:space-y-4">
                       {results.map((article) => (
                         <Card key={article.id}>
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline">{article.article}</Badge>
-                                  <CardTitle className="text-lg">{article.title}</CardTitle>
+                          <CardHeader className="p-4">
+                            <div className="flex flex-col gap-2">
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">{article.article}</Badge>
+                                  <CardTitle className="text-sm md:text-base">{article.title}</CardTitle>
                                 </div>
-                                <CardDescription className="flex items-center gap-1">
-                                  <BookOpen className="h-3 w-3" />
+                                <CardDescription className="flex items-center gap-1 text-xs">
+                                  <BookOpen className="h-3 w-3 flex-shrink-0" />
                                   {article.document}
                                 </CardDescription>
                               </div>
                             </div>
                           </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground">{article.content}</p>
+                          <CardContent className="p-4 pt-0">
+                            <p className="text-xs md:text-sm text-muted-foreground">{article.content}</p>
                           </CardContent>
                         </Card>
                       ))}

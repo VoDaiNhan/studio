@@ -316,11 +316,11 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <ChatSidebar />
+    <div className="flex flex-col h-screen bg-gray-50">
+      <ChatHeader />
       
-      <div className="flex-1 flex flex-col">
-        <ChatHeader />
+      <div className="flex-1 flex overflow-hidden">
+        <ChatSidebar />
         
         <main className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6">
@@ -408,8 +408,8 @@ export default function TemplatesPage() {
               <p className="text-gray-600">Không tìm thấy mẫu đơn phù hợp</p>
             </div>
           )}
-        </div>
-      </main>
+          </div>
+        </main>
       </div>
     </div>
   );

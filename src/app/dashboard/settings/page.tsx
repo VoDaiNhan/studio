@@ -62,55 +62,57 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="p-8 space-y-8">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 w-full max-w-full box-border">
               <div>
-                <h1 className="text-3xl font-bold">Tài khoản & Cài đặt</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="text-2xl md:text-3xl font-bold">Tài khoản & Cài đặt</h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">
                   Quản lý thông tin tài khoản và cài đặt hệ thống
                 </p>
               </div>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <User className="h-4 w-4 md:h-5 md:w-5" />
                     Thông tin tài khoản
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs md:text-sm">
                     Cập nhật thông tin cá nhân của bạn
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-20 w-20">
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <Avatar className="h-16 w-16 md:h-20 md:w-20">
                       <AvatarImage src={user.photoURL || undefined} />
                       <AvatarFallback>
                         {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <Button variant="outline">Thay đổi ảnh đại diện</Button>
+                    <Button variant="outline" className="w-full sm:w-auto text-sm">Thay đổi ảnh đại diện</Button>
                   </div>
 
                   <Separator />
 
                   <div className="grid gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="displayName">Tên hiển thị</Label>
+                      <Label htmlFor="displayName" className="text-sm">Tên hiển thị</Label>
                       <Input
                         id="displayName"
                         defaultValue={user.displayName || ''}
                         placeholder="Nhập tên của bạn"
+                        className="text-sm"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email" className="text-sm">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         defaultValue={user.email || ''}
                         disabled
+                        className="text-sm"
                       />
                       <p className="text-xs text-muted-foreground">
                         Email không thể thay đổi
@@ -122,19 +124,19 @@ export default function SettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
                     Thông báo
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs md:text-sm">
                     Quản lý cài đặt thông báo
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Thông báo qua Email</Label>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-0.5 flex-1">
+                      <Label className="text-sm">Thông báo qua Email</Label>
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         Nhận thông báo về hoạt động quan trọng
                       </p>
                     </div>
@@ -148,10 +150,10 @@ export default function SettingsPage() {
 
                   <Separator />
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Báo cáo hàng tuần</Label>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-0.5 flex-1">
+                      <Label className="text-sm">Báo cáo hàng tuần</Label>
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         Nhận báo cáo tổng hợp hàng tuần
                       </p>
                     </div>
@@ -165,10 +167,10 @@ export default function SettingsPage() {
 
                   <Separator />
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Cảnh báo bảo mật</Label>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-0.5 flex-1">
+                      <Label className="text-sm">Cảnh báo bảo mật</Label>
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         Nhận thông báo về các vấn đề bảo mật
                       </p>
                     </div>
@@ -184,22 +186,22 @@ export default function SettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Shield className="h-4 w-4 md:h-5 md:w-5" />
                     Bảo mật
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs md:text-sm">
                     Quản lý cài đặt bảo mật tài khoản
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button variant="outline">Đổi mật khẩu</Button>
-                  <Button variant="outline">Xem lịch sử đăng nhập</Button>
+                <CardContent className="space-y-3">
+                  <Button variant="outline" className="w-full sm:w-auto text-sm">Đổi mật khẩu</Button>
+                  <Button variant="outline" className="w-full sm:w-auto text-sm">Xem lịch sử đăng nhập</Button>
                 </CardContent>
               </Card>
 
               <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

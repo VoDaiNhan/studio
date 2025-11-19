@@ -105,26 +105,26 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="p-8 space-y-8">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 w-full max-w-full box-border">
               <div>
-                <h1 className="text-3xl font-bold">Lịch sử Trò chuyện</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="text-2xl md:text-3xl font-bold">Lịch sử Trò chuyện</h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">
                   Xem và quản lý lịch sử các cuộc trò chuyện
                 </p>
               </div>
 
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
-                      <CardTitle>Tìm kiếm và lọc</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-base md:text-lg">Tìm kiếm và lọc</CardTitle>
+                      <CardDescription className="text-xs md:text-sm">
                         Tìm kiếm theo người dùng hoặc nội dung câu hỏi
                       </CardDescription>
                     </div>
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -136,16 +136,17 @@ export default function HistoryPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       placeholder="Tìm kiếm theo người dùng hoặc câu hỏi..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      className="flex-1"
                     />
-                    <Button onClick={handleSearch}>
-                      <Search className="h-4 w-4 mr-2" />
-                      Tìm kiếm
+                    <Button onClick={handleSearch} className="w-full sm:w-auto">
+                      <Search className="h-4 w-4 sm:mr-2" />
+                      <span className="sm:inline">Tìm kiếm</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -153,53 +154,53 @@ export default function HistoryPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Danh sách cuộc trò chuyện</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-base md:text-lg">Danh sách cuộc trò chuyện</CardTitle>
+                  <CardDescription className="text-xs md:text-sm">
                     Tìm thấy {conversations.length} cuộc trò chuyện
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-[600px]">
-                    <div className="space-y-4">
+                  <ScrollArea className="h-[400px] md:h-[600px]">
+                    <div className="space-y-3 md:space-y-4">
                       {conversations.map((conv) => (
                         <Card key={conv.id}>
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
+                          <CardHeader className="p-4">
+                            <div className="flex flex-col gap-3">
                               <div className="space-y-2 flex-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <User className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-medium">{conv.user}</span>
+                                  <span className="font-medium text-sm md:text-base">{conv.user}</span>
                                   {conv.verified && (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700">
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
                                       Đã xác minh
                                     </Badge>
                                   )}
-                                  <div className="flex items-center gap-1 text-yellow-500">
+                                  <div className="flex items-center gap-1 text-yellow-500 text-sm">
                                     {'★'.repeat(conv.rating)}
                                     {'☆'.repeat(5 - conv.rating)}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                                   <Calendar className="h-3 w-3" />
                                   {conv.timestamp}
                                 </div>
                               </div>
                             </div>
                           </CardHeader>
-                          <CardContent className="space-y-3">
+                          <CardContent className="space-y-3 p-4 pt-0">
                             <div>
                               <div className="flex items-start gap-2 mb-1">
-                                <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5" />
-                                <span className="font-medium text-sm">Câu hỏi:</span>
+                                <MessageSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                <span className="font-medium text-xs md:text-sm">Câu hỏi:</span>
                               </div>
-                              <p className="text-sm ml-6">{conv.query}</p>
+                              <p className="text-xs md:text-sm ml-6">{conv.query}</p>
                             </div>
                             <div>
                               <div className="flex items-start gap-2 mb-1">
-                                <MessageSquare className="h-4 w-4 text-green-500 mt-0.5" />
-                                <span className="font-medium text-sm">Trả lời:</span>
+                                <MessageSquare className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span className="font-medium text-xs md:text-sm">Trả lời:</span>
                               </div>
-                              <p className="text-sm text-muted-foreground ml-6">{conv.response}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground ml-6">{conv.response}</p>
                             </div>
                           </CardContent>
                         </Card>
